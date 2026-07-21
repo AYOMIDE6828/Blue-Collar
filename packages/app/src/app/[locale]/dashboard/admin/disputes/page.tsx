@@ -32,7 +32,7 @@ const STATUS_COLORS: Record<string, string> = {
   dismissed: "bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400",
 };
 
-function authHeaders() {
+function authHeaders(): Record<string, string> {
   const token = typeof window !== "undefined" ? localStorage.getItem(TOKEN_KEY) : null;
   return token ? { Authorization: `Bearer ${token}` } : {};
 }

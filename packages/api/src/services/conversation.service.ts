@@ -1,5 +1,7 @@
 import { db } from '../db.js'
 import { AppError } from './AppError.js'
+import * as notificationService from './notification.service.js'
+import { logger } from '../config/logger.js'
 
 export async function create(userId: string, participantId: string, subject?: string, initialMessage?: string) {
   const participant = await db.user.findUnique({ where: { id: participantId } })
@@ -81,10 +83,12 @@ export async function getById(id: string, userId: string) {
 export async function addMessage(conversationId: string, senderId: string, body: string, attachmentUrl?: string, attachmentType?: string) {
   const conversation = await db.conversation.findUnique({
     where: { id: conversationId },
-    include: { participants: { where: { userId: senderId } } },
+    include: { participants: true },
   })
   if (!conversation) throw new AppError('Conversation not found', 404)
-  if (conversation.participants.length === 0) throw new AppError('You are not a participant', 403)
+  if (!conversation.participants.some(p => p.userId === senderId)) {
+    throw new AppError('You are not a participant', 403)
+  }
 
   const [message] = await db.$transaction([
     db.message.create({
@@ -93,6 +97,24 @@ export async function addMessage(conversationId: string, senderId: string, body:
     }),
     db.conversation.update({ where: { id: conversationId }, data: { updatedAt: new Date() } }),
   ])
+
+  const recipients = conversation.participants.filter(p => p.userId !== senderId)
+  await Promise.all(
+    recipients.map(async (recipient) => {
+      try {
+        await notificationService.dispatchNotification({
+          userId: recipient.userId,
+          type: 'message',
+          title: 'New message',
+          message: body.length > 140 ? `${body.slice(0, 140)}…` : body,
+          channels: ['inapp'],
+          href: '/messages',
+        })
+      } catch (err) {
+        logger.error({ err, userId: recipient.userId, conversationId }, 'Failed to dispatch message notification')
+      }
+    })
+  )
 
   return message
 }
@@ -118,6 +140,56 @@ export async function listMessages(conversationId: string, userId: string, page:
   ])
 
   return { data: data.reverse(), meta: { total, page, limit, pages: Math.ceil(total / limit) } }
+}
+
+export async function getUnreadCount(userId: string): Promise<number> {
+  const participations = await db.conversationParticipant.findMany({
+    where: { userId },
+    select: { conversationId: true, lastReadAt: true },
+  })
+
+  const counts = await Promise.all(
+    participations.map((p) =>
+      db.message.count({
+        where: {
+          conversationId: p.conversationId,
+          senderId: { not: userId },
+          ...(p.lastReadAt ? { createdAt: { gt: p.lastReadAt } } : {}),
+        },
+      })
+    )
+  )
+
+  return counts.reduce((total, count) => total + count, 0)
+}
+
+export async function searchMessages(conversationId: string, userId: string, query: string) {
+  const conversation = await db.conversation.findUnique({
+    where: { id: conversationId },
+    include: { participants: { where: { userId } } },
+  })
+  if (!conversation) throw new AppError('Conversation not found', 404)
+  if (conversation.participants.length === 0) throw new AppError('Forbidden', 403)
+
+  return db.message.findMany({
+    where: {
+      conversationId,
+      body: { contains: query, mode: 'insensitive' },
+    },
+    orderBy: { createdAt: 'desc' },
+    include: { sender: { select: { id: true, firstName: true, lastName: true, avatar: true } } },
+  })
+}
+
+export async function deleteMessage(messageId: string, userId: string) {
+  const message = await db.message.findUnique({ where: { id: messageId } })
+  if (!message) throw new AppError('Message not found', 404)
+  if (message.senderId !== userId) throw new AppError('Unauthorized', 403)
+
+  return db.message.update({
+    where: { id: messageId },
+    data: { body: '[deleted]', attachmentUrl: null, attachmentType: null },
+  })
 }
 
 export async function markRead(conversationId: string, userId: string) {

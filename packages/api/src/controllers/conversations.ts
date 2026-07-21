@@ -67,3 +67,31 @@ export async function markConversationRead(req: Request, res: Response) {
     return handleError(res, err)
   }
 }
+
+export async function getUnreadCount(req: Request, res: Response) {
+  try {
+    const count = await conversationService.getUnreadCount(req.user!.id)
+    return res.json({ data: { unreadCount: count }, status: 'success', code: 200 })
+  } catch (err) {
+    return handleError(res, err)
+  }
+}
+
+export async function searchMessages(req: Request, res: Response) {
+  try {
+    const { q } = req.query
+    const messages = await conversationService.searchMessages(req.params.id, req.user!.id, (q as string) ?? '')
+    return res.json({ data: messages, status: 'success', code: 200 })
+  } catch (err) {
+    return handleError(res, err)
+  }
+}
+
+export async function deleteMessage(req: Request, res: Response) {
+  try {
+    const message = await conversationService.deleteMessage(req.params.messageId, req.user!.id)
+    return res.json({ data: message, status: 'success', code: 200 })
+  } catch (err) {
+    return handleError(res, err)
+  }
+}

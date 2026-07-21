@@ -28,13 +28,15 @@ import conversationRoutes from './routes/conversations.js'
 import helpfulRoutes from './routes/helpful.js'
 import vitalsRoutes from './routes/vitals.js'
 import devicesRoutes from './routes/devices.js'
+import walletRoutes from './routes/wallet.js'
+import indexerRoutes from './routes/indexer.js'
+import escrowRoutes from './routes/escrow.js'
 import { auditMiddleware } from './middleware/audit.js'
 import { sanitize, sanitizeParams } from './middleware/sanitize.js'
 import { versionMiddleware, deprecationWarning, versionDeprecationMiddleware } from './middleware/version.js'
 import { responseSchemaVersioning } from './utils/schemaVersioning.js'
 import { errorHandler, notFoundHandler } from './middleware/errorHandler.js'
-import docsRouter from './openapi/docs.js'
-import { metricsEndpoint, metricsMiddleware } from './middleware/metrics.js'
+import { metricsHandler as metricsEndpoint, metricsMiddleware } from './middleware/metrics.js'
 import { getRateLimitStatus } from './middleware/versionRateLimit.js'
 import { versionAwareAuth, addAuthGuidanceHeaders } from './middleware/versionAuth.js'
 import { getRolloutStatusEndpoint, updateRolloutEndpoint } from './utils/versionRollout.js'
@@ -268,8 +270,11 @@ app.get('/metrics/cache', (_req, res) => {
 
 app.get('/metrics', metricsEndpoint)
 
-// Swagger UI — development only
-if (process.env['NODE_ENV'] !== 'production') {
+// Swagger UI — development only. Imported lazily (and skipped in test) so that
+// OpenAPI spec generation, which runs eagerly on import, never runs as a side
+// effect of booting the app for tests.
+if (process.env['NODE_ENV'] !== 'production' && process.env['NODE_ENV'] !== 'test') {
+  const { default: docsRouter } = await import('./openapi/docs.js')
   app.use('/api', docsRouter)
 }
 

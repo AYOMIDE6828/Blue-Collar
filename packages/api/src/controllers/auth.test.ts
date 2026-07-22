@@ -73,7 +73,6 @@ describe('registerUser', () => {
     ;(db.user.update as ReturnType<typeof vi.fn>).mockResolvedValue(mockUser)
 
     await registerUser({ email: 'alice@example.com', password: 'secret', firstName: 'Alice', lastName: 'Smith' })
-    await registerUser('alice@example.com', 'secret', 'Alice', 'Smith')
 
     const updateCall = (db.user.update as ReturnType<typeof vi.fn>).mock.calls[0][0]
     expect(updateCall.data.verificationToken).toBeTruthy()
@@ -103,7 +102,6 @@ describe('loginUser', () => {
     })
 
     await expect(loginUser({ email: 'alice@example.com', password: 'secret' })).rejects.toMatchObject({ statusCode: 403 })
-    await expect(loginUser('alice@example.com', 'secret')).rejects.toMatchObject({ statusCode: 403 })
   })
 
   it('returns data and token for verified user with correct credentials', async () => {
@@ -121,7 +119,6 @@ describe('loginUser', () => {
     })
 
     const result = await loginUser({ email: 'alice@example.com', password: 'secret' })
-    const result = await loginUser('alice@example.com', 'secret')
     expect(result.token).toBeTruthy()
     expect(result.data.email).toBe('alice@example.com')
   })
@@ -146,7 +143,6 @@ describe('verifyAccount', () => {
 
     const result = await verifyAccount(validToken)
     expect(result).toBe(true)
-    await verifyAccount(validToken)
 
     const updateCall = (db.user.update as ReturnType<typeof vi.fn>).mock.calls[0][0]
     expect(updateCall.data.verified).toBe(true)

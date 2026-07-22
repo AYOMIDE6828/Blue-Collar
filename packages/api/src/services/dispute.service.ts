@@ -51,6 +51,9 @@ export async function getDispute(id: string, userId: string, role: string) {
 export async function resolveDispute(id: string, adminId: string, status: 'resolved' | 'dismissed' | 'under_review', resolution?: string) {
   const dispute = await db.dispute.findUnique({ where: { id } })
   if (!dispute) throw new AppError('Dispute not found', 404)
+  if (dispute.status === 'resolved' || dispute.status === 'dismissed') {
+    throw new AppError('Dispute has already been resolved', 409)
+  }
 
   return db.dispute.update({
     where: { id },

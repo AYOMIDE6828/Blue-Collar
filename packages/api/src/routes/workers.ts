@@ -27,7 +27,7 @@ import { validate } from '../middleware/validate.js'
 import { withAuth, withAuthAndValidation } from '../middleware/composition.js'
 import { upload, handleMulterError } from '../middleware/upload.js'
 import { createWorkerRules } from '../validations/index.js'
-import { cacheMiddleware, invalidateCachePattern, TTL } from '../middleware/cache.js'
+import { cacheMiddleware, invalidateCachePattern, CacheTTL } from '../middleware/cache.js'
 import { contactRateLimit, generalRateLimit } from '../middleware/userRateLimit.js'
 import { db } from '../db.js'
 
@@ -55,12 +55,12 @@ async function showWorkerWithRatings(req: Request, res: Response) {
   })
 }
 
-router.get('/', generalRateLimit, cacheMiddleware(TTL.SHORT), listWorkers)
-router.get('/search', generalRateLimit, cacheMiddleware(TTL.SHORT), searchWorkersHandler)
-router.get('/search/advanced', generalRateLimit, cacheMiddleware(TTL.SHORT), advancedSearch)
+router.get('/', generalRateLimit, cacheMiddleware(CacheTTL.SHORT), listWorkers)
+router.get('/search', generalRateLimit, cacheMiddleware(CacheTTL.SHORT), searchWorkersHandler)
+router.get('/search/advanced', generalRateLimit, cacheMiddleware(CacheTTL.SHORT), advancedSearch)
 router.get('/mine', authenticate, authorize('curator', 'admin'), listMyWorkers)
 router.get('/mine', withAuth(['curator', 'admin']), listMyWorkers)
-router.get('/:id', generalRateLimit, cacheMiddleware(TTL.MEDIUM), showWorkerWithRatings)
+router.get('/:id', generalRateLimit, cacheMiddleware(CacheTTL.MEDIUM), showWorkerWithRatings)
 router.post('/', authenticate, authorize('curator'), idempotency, validate(createWorkerRules), createWorker)
 router.put('/:id', authenticate, authorize('curator'), updateWorker)
 router.delete('/:id', authenticate, authorize('curator'), deleteWorker)
@@ -71,7 +71,7 @@ router.delete('/:id', withAuth('curator'), deleteWorker)
 router.patch('/:id/toggle', withAuth('curator'), toggleActivation)
 
 // Availability
-router.get('/:id/availability', cacheMiddleware(TTL.SHORT), getAvailability)
+router.get('/:id/availability', cacheMiddleware(CacheTTL.SHORT), getAvailability)
 router.put('/:id/availability', authenticate, authorize('curator'), upsertAvailability)
 router.post('/:id/availability', authenticate, authorize('curator'), addAvailabilitySlot)
 router.delete('/:id/availability/:slotId', authenticate, authorize('curator'), deleteAvailabilitySlot)
@@ -96,7 +96,7 @@ router.post('/:id/bookmark', authenticate, toggleBookmark)
 router.post('/:id/bookmark', withAuth(), toggleBookmark)
 
 // Reviews
-router.get('/:id/reviews', cacheMiddleware(TTL.SHORT), listWorkerReviews)
+router.get('/:id/reviews', cacheMiddleware(CacheTTL.SHORT), listWorkerReviews)
 router.post('/:id/reviews', authenticate, createWorkerReview)
 router.post('/:id/reviews', withAuth(), createWorkerReview)
 router.delete('/reviews/:id', authenticate, deleteReview)
@@ -114,7 +114,7 @@ router.get('/:id/analytics/trends', authenticate, authorize('curator', 'admin'),
 router.get('/:id/analytics', withAuth(['curator', 'admin']), getAnalytics)
 
 // Reputation (#677)
-router.get('/:id/reputation', cacheMiddleware(TTL.SHORT), getReputation)
+router.get('/:id/reputation', cacheMiddleware(CacheTTL.SHORT), getReputation)
 router.post('/:id/reputation/sync', authenticate, authorize('admin'), syncReputation)
 router.post('/:id/reputation/sync', withAuth('admin'), syncReputation)
 

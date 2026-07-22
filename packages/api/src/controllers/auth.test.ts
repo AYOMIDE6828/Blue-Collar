@@ -82,7 +82,7 @@ describe('registerUser', () => {
   it('throws AppError 409 when email is already registered', async () => {
     ;(db.user.findUnique as ReturnType<typeof vi.fn>).mockResolvedValue({ id: 'existing' })
 
-    await expect(registerUser({ email: 'alice@example.com', password: 'secret', firstName: 'Alice', lastName: 'Smith' })).rejects.toMatchObject({
+    await expect(registerUser('alice@example.com', 'secret', 'Alice', 'Smith')).rejects.toMatchObject({
       statusCode: 409,
     })
   })

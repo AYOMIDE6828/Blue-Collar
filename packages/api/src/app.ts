@@ -24,17 +24,25 @@ import analyticsRoutes from './routes/analytics.js'
 import paymentRoutes from './routes/payments.js'
 import jobRoutes from './routes/jobs.js'
 import notificationRoutes from './routes/notifications.js'
-import conversationRoutes from './routes/conversations.js'
 import helpfulRoutes from './routes/helpful.js'
 import vitalsRoutes from './routes/vitals.js'
 import devicesRoutes from './routes/devices.js'
+import bookingsRoutes from './routes/bookings.js'
+import escrowRoutes from './routes/escrow.js'
+import indexerRoutes from './routes/indexer.js'
+import messagesRoutes from './routes/messages.js'
+import notificationPreferencesRoutes from './routes/notificationPreferences.js'
+import portfolioRoutes from './routes/portfolio.js'
+import reviewsRoutes from './routes/reviews.js'
+import subscriptionsRoutes from './routes/subscriptions.js'
+import walletRoutes from './routes/wallet.js'
+import workerEventsRoutes from './routes/workerEvents.js'
 import { auditMiddleware } from './middleware/audit.js'
 import { sanitize, sanitizeParams } from './middleware/sanitize.js'
 import { versionMiddleware, deprecationWarning, versionDeprecationMiddleware } from './middleware/version.js'
 import { responseSchemaVersioning } from './utils/schemaVersioning.js'
 import { errorHandler, notFoundHandler } from './middleware/errorHandler.js'
-import docsRouter from './openapi/docs.js'
-import { metricsEndpoint, metricsMiddleware } from './middleware/metrics.js'
+import { metricsHandler as metricsEndpoint, metricsMiddleware } from './middleware/metrics.js'
 import { getRateLimitStatus } from './middleware/versionRateLimit.js'
 import { versionAwareAuth, addAuthGuidanceHeaders } from './middleware/versionAuth.js'
 import { getRolloutStatusEndpoint, updateRolloutEndpoint } from './utils/versionRollout.js'
@@ -87,15 +95,22 @@ app.use('/api/workers', insuranceRoutes)
 app.use('/api/referrals', referralRoutes)
 app.use('/api/analytics', analyticsRoutes)
 app.use('/api/payments', paymentRoutes)
+app.use('/api/bookings', bookingRoutes)
 app.use('/api/jobs', jobRoutes)
 app.use('/api/notifications', notificationRoutes)
-app.use('/api/conversations', conversationRoutes)
 app.use('/api/reviews', helpfulRoutes)
+app.use('/api/reviews/helpful', reviewsRoutes)
 app.use('/api/auth', devicesRoutes)
 app.use('/api', vitalsRoutes)
 app.use('/api/wallet', walletRoutes)
 app.use('/api/events', indexerRoutes)
 app.use('/api/escrow', escrowRoutes)
+app.use('/api/bookings', bookingsRoutes)
+app.use('/api/messages', messagesRoutes)
+app.use('/api/notifications/preferences', notificationPreferencesRoutes)
+app.use('/api/workers/:workerId/portfolio', portfolioRoutes)
+app.use('/api/subscriptions', subscriptionsRoutes)
+app.use('/api/workers/events', workerEventsRoutes)
 // ── Versioned routes (v1) ─────────────────────────────────────────────────────
 app.use('/api/v1/auth', authRoutes)
 app.use('/api/v1/categories', categoryRoutes)
@@ -111,9 +126,9 @@ app.use('/api/v1', responseTimeRoutes)
 app.use('/api/v1/workers', insuranceRoutes)
 app.use('/api/v1/referrals', referralRoutes)
 app.use('/api/v1/payments', paymentRoutes)
+app.use('/api/v1/bookings', bookingRoutes)
 app.use('/api/v1/jobs', jobRoutes)
 app.use('/api/v1/notifications', notificationRoutes)
-app.use('/api/v1/conversations', conversationRoutes)
 app.use('/api/v1/reviews', helpfulRoutes)
 app.use('/api/v1/auth', devicesRoutes)
 
@@ -134,7 +149,6 @@ app.use('/api/v2/workers', insuranceRoutes)
 app.use('/api/v2/referrals', referralRoutes)
 app.use('/api/v2/payments', paymentRoutes)
 app.use('/api/v2/notifications', notificationRoutes)
-app.use('/api/v2/conversations', conversationRoutes)
 app.use('/api/v2/reviews', helpfulRoutes)
 app.use('/api/v2/wallet', walletRoutes)
 app.use('/api/v2/events', indexerRoutes)
@@ -268,8 +282,11 @@ app.get('/metrics/cache', (_req, res) => {
 
 app.get('/metrics', metricsEndpoint)
 
-// Swagger UI — development only
-if (process.env['NODE_ENV'] !== 'production') {
+// Swagger UI — development only. Imported lazily (and skipped in test) so that
+// OpenAPI spec generation, which runs eagerly on import, never runs as a side
+// effect of booting the app for tests.
+if (process.env['NODE_ENV'] !== 'production' && process.env['NODE_ENV'] !== 'test') {
+  const { default: docsRouter } = await import('./openapi/docs.js')
   app.use('/api', docsRouter)
 }
 

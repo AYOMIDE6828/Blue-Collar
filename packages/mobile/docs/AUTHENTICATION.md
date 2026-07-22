@@ -228,6 +228,15 @@ async function logout() {
 
 ## Testing
 
+Unit/integration coverage for this package lives alongside the source:
+`src/auth/__tests__/SecureStorage.test.ts`, `src/auth/__tests__/BiometricAuth.test.ts`,
+`src/context/__tests__/AuthContext.test.tsx`, `src/screens/__tests__/AppLockScreen.test.tsx`,
+and `src/screens/__tests__/BiometricSettingsScreen.test.tsx`. These mock `expo-secure-store`
+and `expo-local-authentication` and run under `jest-expo` — no on-device runtime is required.
+
+On-device e2e (Detox/Maestro) for the auth flow is out of scope here since no mobile e2e
+infrastructure exists yet in this repo; tracked as a follow-up.
+
 ### Testing SecureStorage
 
 ```typescript

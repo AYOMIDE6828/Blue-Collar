@@ -137,6 +137,7 @@ Fill in all relevant sections. The templates include checklists specific to the 
 - 2-space indent, double quotes
 - Run `pnpm build` to catch type errors before pushing
 - Run `pnpm test` to ensure no regressions
+- All input validation schemas live in `src/validations/`. Do not create a separate `validators/` directory — add new Zod schemas as a file there and re-export them from `src/validations/index.ts`.
 
 ### Contracts (Rust)
 

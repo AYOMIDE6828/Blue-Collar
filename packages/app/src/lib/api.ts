@@ -288,6 +288,22 @@ export const markAllNotificationsRead = () =>
 export const deleteNotification = (id: string) =>
   request<void>(`/v1/notifications/${id}`, { method: "DELETE" });
 
+export interface NotificationPreferences {
+  newWorkerNearby: boolean;
+  statusChange: boolean;
+  reviewReply: boolean;
+  announcements: boolean;
+}
+
+export const getNotificationPreferences = () =>
+  request<{ data: NotificationPreferences; status: string }>("/v1/notifications/preferences");
+
+export const updateNotificationPreferences = (prefs: Partial<NotificationPreferences>) =>
+  request<{ status: string; message: string }>("/v1/notifications/preferences", {
+    method: "PUT",
+    body: prefs,
+  });
+
 // ── Conversations ───────────────────────────────────────────────────────────
 
 import type { Conversation, Message } from "@/types";

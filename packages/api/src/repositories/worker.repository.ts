@@ -176,8 +176,7 @@ export class WorkerRepository implements IWorkerRepository {
 
     // Availability filtering
     if (dayOfWeek !== undefined || startTime || endTime) {
-      where.availability = { some: {} }
-      const availWhere: any = where.availability.some
+      const availWhere: Prisma.AvailabilityWhereInput = {}
       if (dayOfWeek !== undefined) {
         availWhere.dayOfWeek = dayOfWeek
       }
@@ -187,6 +186,7 @@ export class WorkerRepository implements IWorkerRepository {
       if (endTime) {
         availWhere.endTime = { lte: endTime }
       }
+      where.availability = { some: availWhere }
     }
 
     // Fetch workers with essential relations only (no reviews — avoids N+1)
@@ -281,7 +281,7 @@ export class WorkerRepository implements IWorkerRepository {
   }
 
   private calculateRelevance(
-    worker: any,
+    worker: Pick<Worker, 'name' | 'bio' | 'isVerified'>,
     query?: string,
     avgRating?: number,
     distanceKm?: number,

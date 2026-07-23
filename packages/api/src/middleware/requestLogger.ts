@@ -2,6 +2,10 @@ import pinoHttp from 'pino-http'
 import pino from 'pino'
 import fs from 'node:fs'
 import path from 'node:path'
+import type { IncomingMessage } from 'node:http'
+
+/** Request augmented with the authenticated user attached by auth middleware. */
+type LoggedRequest = IncomingMessage & { user?: { id?: string } }
 
 const LOG_DIR = process.env.LOG_DIR ?? 'storage/logs'
 fs.mkdirSync(path.resolve(LOG_DIR), { recursive: true })
@@ -30,12 +34,12 @@ export const requestLogger = pinoHttp({
 
   // PII SAFETY: Only method, url, and statusCode are logged.
   // No headers, body, query params, or IP addresses are persisted.
-  customProps: (req: any) => ({
-    userId: req.user?.id ?? null,
+  customProps: (req: IncomingMessage) => ({
+    userId: (req as LoggedRequest).user?.id ?? null,
   }),
 
-  customSuccessMessage: (req: any, res) => `${req.method} ${req.url} ${res.statusCode}`,
-  customErrorMessage: (req: any, res, err) => `${req.method} ${req.url} ${res.statusCode} — ${err.message}`,
+  customSuccessMessage: (req: IncomingMessage, res) => `${req.method} ${req.url} ${res.statusCode}`,
+  customErrorMessage: (req: IncomingMessage, res, err) => `${req.method} ${req.url} ${res.statusCode} — ${err.message}`,
 
   serializers: {
     req: (req) => ({ method: req.method, url: req.url }),

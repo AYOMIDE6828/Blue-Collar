@@ -12,6 +12,7 @@
  */
 import { db } from '../../db.js'
 import { AppError } from '../AppError.js'
+import { getErrorMessage } from '../../utils/getErrorMessage.js'
 import {
   type DateRange,
   type TimeSeriesPoint,
@@ -137,8 +138,8 @@ export function parseAnalyticsDateRange(
     endDate = parseDateBoundary(query.endDate, 'end') ?? now
     const defaultDays = Math.min(Math.max(Number(query.days) || 30, 1), 366)
     startDate = parseDateBoundary(query.startDate, 'start') ?? daysBefore(endDate, defaultDays - 1)
-  } catch (err: any) {
-    throw new AppError(err.message, 400)
+  } catch (err) {
+    throw new AppError(getErrorMessage(err), 400)
   }
 
   if (startDate > endDate) throw new AppError('startDate must be before or equal to endDate', 400)

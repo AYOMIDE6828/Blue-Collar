@@ -5,6 +5,7 @@ import { redis, cacheMetrics } from './config/redis.js'
 import { db } from './db.js'
 import { disconnectDb } from './db.js'
 import { requestLogger } from './middleware/requestLogger.js'
+import { getErrorMessage } from './utils/getErrorMessage.js'
 import { registerEventHandlers } from './events/index.js'
 import { applySecurity, depthLimiter } from './middleware/security.js'
 import authRoutes from './routes/auth.js'
@@ -249,8 +250,8 @@ app.get('/ready', async (_req, res) => {
   try {
     await db.$queryRaw`SELECT 1`
     checks.database = { status: 'ok', latencyMs: Date.now() - dbStart }
-  } catch (err: any) {
-    checks.database = { status: 'error', latencyMs: Date.now() - dbStart, error: err?.message }
+  } catch (err) {
+    checks.database = { status: 'error', latencyMs: Date.now() - dbStart, error: getErrorMessage(err) }
   }
 
   // Redis check
@@ -258,8 +259,8 @@ app.get('/ready', async (_req, res) => {
   try {
     await redis.ping()
     checks.redis = { status: 'ok', latencyMs: Date.now() - redisStart }
-  } catch (err: any) {
-    checks.redis = { status: 'error', latencyMs: Date.now() - redisStart, error: err?.message }
+  } catch (err) {
+    checks.redis = { status: 'error', latencyMs: Date.now() - redisStart, error: getErrorMessage(err) }
   }
 
   const allOk = Object.values(checks).every((c) => c.status === 'ok')

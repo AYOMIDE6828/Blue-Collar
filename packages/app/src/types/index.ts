@@ -191,3 +191,39 @@ export interface JobMessage {
   sender: { id: string; firstName: string; lastName: string; avatar?: string | null };
   recipient: { id: string; firstName: string; lastName: string; avatar?: string | null };
 }
+
+// ─── Invoices ─────────────────────────────────────────────────────────────────
+
+export type InvoiceStatus = "draft" | "issued" | "paid" | "overdue" | "void";
+
+export interface InvoiceLineItem {
+  id: string;
+  description: string;
+  quantity: number;
+  /** Price per unit, in the invoice's currency. */
+  unitAmount: number;
+}
+
+export interface InvoiceParty {
+  id: string;
+  name: string;
+}
+
+export interface Invoice {
+  id: string;
+  /** Human-facing reference, e.g. "INV-2026-0042". */
+  number: string;
+  status: InvoiceStatus;
+  issuedAt: string;
+  dueAt?: string | null;
+  /** Asset code, e.g. "XLM". */
+  currency: string;
+  worker: InvoiceParty;
+  client: InvoiceParty;
+  lineItems: InvoiceLineItem[];
+  /** Platform fee applied on top of the line-item subtotal. */
+  platformFee: number;
+  notes?: string | null;
+  /** Stellar transaction hash, present once the invoice is paid. */
+  transactionHash?: string | null;
+}

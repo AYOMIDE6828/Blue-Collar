@@ -1,8 +1,7 @@
 /**
  * Central export for all validation schemas.
  *
- * All schemas use Zod. Import from here (or from validators/index.ts) to
- * avoid reaching into individual files.
+ * All schemas use Zod. Import from here to avoid reaching into individual files.
  *
  * Usage:
  *   import { loginRules, createWorkerRules } from '../validations/index.js'

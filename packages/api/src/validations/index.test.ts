@@ -6,12 +6,12 @@ import {
   resetPasswordRules,
   verifyAccountRules,
   resendVerificationRules,
-} from '../validations/auth.js'
-import { createWorkerRules, updateWorkerRules, createReviewRules, advancedSearchRules } from '../validations/worker.js'
-import { updateProfileRules, changePasswordRules, pushSubscriptionRules } from '../validations/user.js'
-import { bulkDeleteRules, bulkToggleRules } from '../validations/admin.js'
-import { tipRules, createEscrowRules, updateFeeRules } from '../validations/payment.js'
-import { revokeOtherDevicesRules } from '../validations/device.js'
+} from './auth.js'
+import { createWorkerRules, updateWorkerRules, createReviewRules, advancedSearchRules } from './worker.js'
+import { updateProfileRules, changePasswordRules, pushSubscriptionRules } from './user.js'
+import { bulkDeleteRules, bulkToggleRules } from './admin.js'
+import { tipRules, createEscrowRules, updateFeeRules } from './payment.js'
+import { revokeOtherDevicesRules } from './device.js'
 
 // ── Auth validators ───────────────────────────────────────────────────────────
 

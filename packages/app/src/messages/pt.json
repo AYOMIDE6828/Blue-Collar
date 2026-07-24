@@ -35,7 +35,12 @@
     "connecting": "Conectando…",
     "disconnectWallet": "Desconectar carteira",
     "testnet": "testnet",
-    "mainnet": "mainnet"
+    "mainnet": "mainnet",
+    "primaryNavigation": "Navegação principal",
+    "mobileMenu": "Menu principal",
+    "changeLanguage": "Alterar idioma, idioma atual {language}",
+    "accountMenu": "Menu da conta de {name}",
+    "walletMenu": "Menu da carteira"
   },
   "hero": {
     "title": "Encontre Trabalhadores Qualificados Perto de Você",

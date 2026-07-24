@@ -35,7 +35,12 @@
     "connecting": "Conectando…",
     "disconnectWallet": "Desconectar billetera",
     "testnet": "testnet",
-    "mainnet": "mainnet"
+    "mainnet": "mainnet",
+    "primaryNavigation": "Navegación principal",
+    "mobileMenu": "Menú principal",
+    "changeLanguage": "Cambiar idioma, idioma actual {language}",
+    "accountMenu": "Menú de cuenta de {name}",
+    "walletMenu": "Menú de billetera"
   },
   "hero": {
     "title": "Encuentra trabajadores calificados cerca de ti",

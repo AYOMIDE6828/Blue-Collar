@@ -114,6 +114,7 @@
   },
   "tip": {
     "title": "Send a Tip",
+    "sendTip": "Send Tip",
     "description": "Reward {name} for excellent service",
     "recipient": "Recipient",
     "amount": "Amount",
@@ -139,7 +140,9 @@
     "transactionFailed": "Transaction failed",
     "tryAgain": "Try again",
     "signing": "Signing…",
-    "ariaClose": "Close dialog"
+    "ariaClose": "Close dialog",
+    "cancel": "Cancel",
+    "close": "Close"
   },
   "search": {
     "placeholder": "Search workers by name or skill...",

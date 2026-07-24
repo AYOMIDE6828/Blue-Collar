@@ -35,6 +35,7 @@ Many skilled workers lack a platform to help them get noticed. Meanwhile, countl
 - [Community](#community)
 - [Contributing](#contributing)
 - [License](#license)
+- [Local Setup Guide (all packages)](docs/LOCAL_SETUP.md)
 - [Quick Start Guide](packages/api/QUICK_START_GUIDE.md)
 - [API Documentation](packages/api/DOCUMENTATION.json)
 - [API cURL Examples](packages/api/CURL_EXAMPLES.md)
@@ -399,6 +400,11 @@ pnpm docker:down
 ---
 
 ## Getting Started
+
+> This section is a quick-start for `api` + `app` only. For a single guide covering
+> every package — `api`, `app`, `contracts`, `sdk`, `mobile`, `monitoring`, `types` —
+> plus environment variables and local Soroban/Stellar network setup, see
+> [docs/LOCAL_SETUP.md](docs/LOCAL_SETUP.md).
 
 ### Prerequisites
 

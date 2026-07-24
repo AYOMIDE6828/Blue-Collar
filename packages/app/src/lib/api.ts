@@ -17,6 +17,8 @@ import type {
   ViewTrend,
   TopWorker,
   WorkerPersonalDashboard,
+  AppNotification,
+  AuditLogEntry,
 } from "@/types";
 
 const BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3000/api";
@@ -345,6 +347,24 @@ export const unsuspendUser = (userId: string) =>
 
 export const banUser = (userId: string) =>
   request<ApiResponse<{ id: string; banned: boolean }>>(`/v1/admin/users/${userId}/ban`, { method: "PATCH" });
+
+export const changeUserRole = (userId: string, role: "user" | "curator" | "admin") =>
+  request<ApiResponse<{ id: string; email: string; firstName: string; lastName: string; role: string }>>(
+    `/v1/admin/users/${userId}/role`,
+    { method: "PATCH", body: { role } },
+  );
+
+export const bulkSuspendUsers = (ids: string[]) =>
+  request<ApiResponse<{ updated: number; suspended: boolean }>>(`/v1/admin/users/bulk-suspend`, {
+    method: "PATCH",
+    body: { ids },
+  });
+
+export const bulkUnsuspendUsers = (ids: string[]) =>
+  request<ApiResponse<{ updated: number; suspended: boolean }>>(`/v1/admin/users/bulk-unsuspend`, {
+    method: "PATCH",
+    body: { ids },
+  });
 
 export const getAuditLogs = (params?: Record<string, string>) => {
   const qs = params ? `?${new URLSearchParams(params).toString()}` : "";

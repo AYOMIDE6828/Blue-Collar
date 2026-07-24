@@ -45,25 +45,28 @@ class Analytics {
     }
   }
 
-  private scrubPII(data: any): any {
-    if (!data) return data
-    if (typeof data !== 'object') return data
+  private scrubPII(data: unknown): unknown {
+    if (!data || typeof data !== 'object') return data
 
-    const scrubbed: any = Array.isArray(data) ? [] : {}
-    for (const key in data) {
-      // Block PII fields
-      if (['email', 'name', 'phone', 'address', 'ip', 'walletAddress'].includes(key)) {
-        continue
-      }
-      scrubbed[key] = typeof data[key] === 'object' ? this.scrubPII(data[key]) : data[key]
+    // Block PII fields
+    const BLOCKED = ['email', 'name', 'phone', 'address', 'ip', 'walletAddress']
+
+    if (Array.isArray(data)) {
+      return data.map((item) => (typeof item === 'object' ? this.scrubPII(item) : item))
+    }
+
+    const scrubbed: Record<string, unknown> = {}
+    for (const [key, value] of Object.entries(data as Record<string, unknown>)) {
+      if (BLOCKED.includes(key)) continue
+      scrubbed[key] = typeof value === 'object' ? this.scrubPII(value) : value
     }
     return scrubbed
   }
 
-  private track(event: string, category: EventCategory, properties?: Record<string, any>) {
+  private track(event: string, category: EventCategory, properties?: Record<string, unknown>) {
     if (!this.consent.analytics) return
 
-    const scrubbedProperties = this.scrubPII(properties)
+    const scrubbedProperties = this.scrubPII(properties) as AnalyticsEvent['properties']
     const analyticsEvent: AnalyticsEvent = {
       event,
       category,

@@ -4,6 +4,8 @@ import { sanitizeUser } from '../models/user.model.js'
 import * as userService from '../services/user.service.js'
 import { logger } from '../config/logger.js'
 import { ErrorMessages, HttpStatus } from '../constants/index.js'
+import { AppError } from '../services/AppError.js'
+import { ZodError } from 'zod'
 
 // ── Profile update ────────────────────────────────────────────────────────────
 
@@ -44,11 +46,11 @@ export async function updateMe(req: Request, res: Response) {
   try {
     const user = await userService.updateProfile(userId, req.body)
     return res.json({ data: user, status: 'success', code: 200 })
-  } catch (error: any) {
-    if (error?.name === 'ZodError') {
+  } catch (error: unknown) {
+    if (error instanceof ZodError) {
       return res.status(HttpStatus.BAD_REQUEST).json({ status: 'error', message: 'Validation failed', code: HttpStatus.BAD_REQUEST, errors: error.errors })
     }
-    if (error?.statusCode) {
+    if (error instanceof AppError) {
       return res.status(error.statusCode).json({ status: 'error', message: error.message, code: error.statusCode })
     }
     logger.error({ err: error }, '[updateMe] error')
@@ -71,8 +73,8 @@ export async function changePassword(req: Request, res: Response) {
   try {
     await userService.changePassword(userId, currentPassword, newPassword)
     return res.json({ status: 'success', message: 'Password updated', code: HttpStatus.OK })
-  } catch (error: any) {
-    if (error?.statusCode) {
+  } catch (error: unknown) {
+    if (error instanceof AppError) {
       return res.status(error.statusCode).json({ status: 'error', message: error.message, code: error.statusCode })
     }
     logger.error({ err: error }, '[changePassword] error')

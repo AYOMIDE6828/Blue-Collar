@@ -133,20 +133,31 @@ async function sendEmailNotification(payload: NotificationPayload): Promise<void
   })
 }
 
-function shouldSendEmail(prefs: any, type: string): boolean {
+/**
+ * Minimal view of a user's notification preferences that the dispatch gates
+ * depend on. Both a persisted `NotificationPreferences` row and the in-memory
+ * `DEFAULT_PREFERENCES` fallback satisfy this shape.
+ */
+interface NotificationPrefsView {
+  reviewReply: boolean
+  announcements: boolean
+}
+
+function shouldSendEmail(prefs: NotificationPrefsView, type: string): boolean {
   // Keyed on the real NotificationType enum values (tip/review/contact/system/message) —
   // 'worker_nearby'/'status_change'/'review_reply'/'announcement' never match any
   // actual dispatch call site (every caller uses 'system'), so preferences never
   // took effect. 'newWorkerNearby'/'statusChange' have no corresponding enum
   // value yet, so they stay unmapped (default-on) until that type exists.
-  const typeMap: Record<string, keyof typeof prefs> = {
+  const typeMap: Record<string, keyof NotificationPrefsView> = {
     'review': 'reviewReply',
     'system': 'announcements',
   }
-  return prefs[typeMap[type]] ?? true
+  const key = typeMap[type]
+  return key ? prefs[key] : true
 }
 
-function shouldSendPush(prefs: any, type: string): boolean {
+function shouldSendPush(prefs: NotificationPrefsView, type: string): boolean {
   // Always send push for important notifications
   return !['review'].includes(type) || prefs.reviewReply
 }

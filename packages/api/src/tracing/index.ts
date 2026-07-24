@@ -101,8 +101,19 @@ export const startSpan = (name: string, attributes?: Record<string, any>) => {
   return { span, ctx: trace.setSpan(context.active(), span) };
 };
 
+/**
+ * Minimal span surface used by the error helper. Declared locally because the
+ * `@opentelemetry/api` `Span` type is only available when the (optional) OTel
+ * packages are installed — this avoids `any` without a hard dependency.
+ */
+interface EndableSpan {
+  setStatus(status: { code: number; message?: string }): void
+  recordException(error: Error): void
+  end(): void
+}
+
 // Helper to end a span with error handling
-export const endSpanWithError = (span: any, error: Error) => {
+export const endSpanWithError = (span: EndableSpan, error: Error) => {
   span.setStatus({
     code: SpanStatusCode.ERROR,
     message: error.message,

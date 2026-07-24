@@ -1,3 +1,4 @@
+import type { Prisma } from '@prisma/client'
 import { db } from '../db.js'
 import { AppError } from './AppError.js'
 import { formatWorker } from '../models/worker.model.js'
@@ -69,7 +70,7 @@ export async function listWorkers(opts: {
     ? { categoryId: category }
     : {}
 
-  const where: any = {
+  const where: Prisma.WorkerWhereInput = {
     isActive: true,
     deletedAt: null,
     ...categoryFilter,
@@ -90,7 +91,7 @@ export async function listWorkers(opts: {
   }
 
   if (minRating !== undefined || maxRating !== undefined) {
-    const havingClause: any = {}
+    const havingClause: { gte?: number; lte?: number } = {}
     if (minRating !== undefined) havingClause.gte = minRating
     if (maxRating !== undefined) havingClause.lte = maxRating
     const qualifiedIds = await db.review.groupBy({
@@ -102,7 +103,7 @@ export async function listWorkers(opts: {
   }
 
   // Build orderBy
-  let orderBy: any = { createdAt: 'desc' }
+  let orderBy: Prisma.WorkerOrderByWithRelationInput = { createdAt: 'desc' }
   if (sortBy === 'oldest') orderBy = { createdAt: 'asc' }
   else if (sortBy === 'name') orderBy = { name: sortOrder }
   else if (sortBy === 'newest') orderBy = { createdAt: sortOrder }
@@ -158,7 +159,7 @@ export async function listWorkersCursor(opts: {
     ? { categoryId: category }
     : {}
 
-  const where: any = {
+  const where: Prisma.WorkerWhereInput = {
     isActive: true,
     ...categoryFilter,
     ...(isVerified !== undefined ? { isVerified } : {}),
@@ -179,7 +180,7 @@ export async function listWorkersCursor(opts: {
   }
 
   if (minRating !== undefined || maxRating !== undefined) {
-    const havingClause: any = {}
+    const havingClause: { gte?: number; lte?: number } = {}
     if (minRating !== undefined) havingClause.gte = minRating
     if (maxRating !== undefined) havingClause.lte = maxRating
     const qualifiedIds = await db.review.groupBy({

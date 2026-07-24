@@ -36,7 +36,7 @@ Many skilled workers lack a platform to help them get noticed. Meanwhile, countl
 - [Contributing](#contributing)
 - [License](#license)
 - [Quick Start Guide](packages/api/QUICK_START_GUIDE.md)
-- [API Documentation](packages/api/DOCUMENTATION.json)
+- [API Reference](packages/api/API_REFERENCE.md)
 - [API cURL Examples](packages/api/CURL_EXAMPLES.md)
 - [Security Policy](packages/api/SECURITY.md)
 - [Environment Variables](docs/ENVIRONMENT_VARIABLES.md)
@@ -280,7 +280,7 @@ Base URL: `http://localhost:3000/api`
 > X-HTTP-Method: PUT
 > ```
 >
-> See [DOCUMENTATION.json](packages/api/DOCUMENTATION.json) for detailed explanation of the method-override pattern, including client implementation examples and common mistakes to avoid.
+> See [API_REFERENCE.md](packages/api/API_REFERENCE.md#the-x-http-method-override-pattern) for a detailed explanation of the method-override pattern, including client implementation examples.
 
 ### Admin
 

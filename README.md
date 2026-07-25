@@ -21,6 +21,7 @@ Many skilled workers lack a platform to help them get noticed. Meanwhile, countl
 - [Overview](#overview)
 - [Architecture](#architecture)
 - [Monorepo Structure](#monorepo-structure)
+- [Architecture Decision Records](docs/adr/0001-monorepo-package-boundaries.md)
 - [Packages](#packages)
   - [API](#api-packagesapi)
   - [Contracts](#contracts-packagescontracts)
@@ -35,9 +36,9 @@ Many skilled workers lack a platform to help them get noticed. Meanwhile, countl
 - [Community](#community)
 - [Contributing](#contributing)
 - [License](#license)
-- [Local Setup Guide (all packages)](docs/LOCAL_SETUP.md)
+- [Monorepo Package Boundaries (ADR)](docs/adr/0001-monorepo-package-boundaries.md)
 - [Quick Start Guide](packages/api/QUICK_START_GUIDE.md)
-- [API Documentation](packages/api/DOCUMENTATION.json)
+- [API Reference](packages/api/API_REFERENCE.md)
 - [API cURL Examples](packages/api/CURL_EXAMPLES.md)
 - [Security Policy](packages/api/SECURITY.md)
 - [Environment Variables](docs/ENVIRONMENT_VARIABLES.md)
@@ -45,6 +46,7 @@ Many skilled workers lack a platform to help them get noticed. Meanwhile, countl
 - [Contract Reference](docs/CONTRACTS.md)
 - [Contract Integration Guide](docs/CONTRACT_INTEGRATION.md)
 - [Contributing Guide](CONTRIBUTING.md)
+- [Error Handling & Logging Conventions](docs/ERROR_HANDLING_AND_LOGGING.md)
 - [Code of Conduct](CODE_OF_CONDUCT.md)
 - [Frontend Contributing Guide](packages/app/CONTRIBUTING.md)
 - [i18n & Translation Guide](docs/i18n-translations.md)
@@ -150,6 +152,10 @@ bluecollar/
 ├── pnpm-workspace.yaml
 └── README.md
 ```
+
+For the rationale behind this split — what each package is for, which packages are
+allowed to depend on which, and a dependency graph — see
+[docs/adr/0001-monorepo-package-boundaries.md](docs/adr/0001-monorepo-package-boundaries.md).
 
 ---
 
@@ -281,7 +287,7 @@ Base URL: `http://localhost:3000/api`
 > X-HTTP-Method: PUT
 > ```
 >
-> See [DOCUMENTATION.json](packages/api/DOCUMENTATION.json) for detailed explanation of the method-override pattern, including client implementation examples and common mistakes to avoid.
+> See [API_REFERENCE.md](packages/api/API_REFERENCE.md#the-x-http-method-override-pattern) for a detailed explanation of the method-override pattern, including client implementation examples.
 
 ### Admin
 

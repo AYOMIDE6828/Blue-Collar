@@ -114,6 +114,7 @@
   },
   "tip": {
     "title": "Enviar propina",
+    "sendTip": "Enviar propina",
     "description": "Recompensa a {name} por un servicio excelente",
     "recipient": "Destinatario",
     "amount": "Cantidad",
@@ -139,7 +140,9 @@
     "transactionFailed": "Transacción fallida",
     "tryAgain": "Intentar de nuevo",
     "signing": "Firmando…",
-    "ariaClose": "Cerrar diálogo"
+    "ariaClose": "Cerrar diálogo",
+    "cancel": "Cancelar",
+    "close": "Cerrar"
   },
   "search": {
     "placeholder": "Buscar trabajadores por nombre o habilidad...",

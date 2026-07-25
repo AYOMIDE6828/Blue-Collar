@@ -13,15 +13,15 @@ type Story = StoryObj<typeof OnboardingModal>
 export const Default: Story = {
   args: {
     isOpen: true,
+    onClose: () => console.log('Onboarding closed'),
     onComplete: () => console.log('Onboarding completed'),
-    onSkip: () => console.log('Onboarding skipped'),
   },
 }
 
 export const Closed: Story = {
   args: {
     isOpen: false,
+    onClose: () => console.log('Onboarding closed'),
     onComplete: () => console.log('Onboarding completed'),
-    onSkip: () => console.log('Onboarding skipped'),
   },
 }

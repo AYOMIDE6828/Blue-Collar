@@ -21,6 +21,7 @@ Many skilled workers lack a platform to help them get noticed. Meanwhile, countl
 - [Overview](#overview)
 - [Architecture](#architecture)
 - [Monorepo Structure](#monorepo-structure)
+- [Architecture Decision Records](docs/adr/0001-monorepo-package-boundaries.md)
 - [Packages](#packages)
   - [API](#api-packagesapi)
   - [Contracts](#contracts-packagescontracts)
@@ -35,6 +36,7 @@ Many skilled workers lack a platform to help them get noticed. Meanwhile, countl
 - [Community](#community)
 - [Contributing](#contributing)
 - [License](#license)
+- [Monorepo Package Boundaries (ADR)](docs/adr/0001-monorepo-package-boundaries.md)
 - [Quick Start Guide](packages/api/QUICK_START_GUIDE.md)
 - [API Reference](packages/api/API_REFERENCE.md)
 - [API cURL Examples](packages/api/CURL_EXAMPLES.md)
@@ -150,6 +152,10 @@ bluecollar/
 ├── pnpm-workspace.yaml
 └── README.md
 ```
+
+For the rationale behind this split — what each package is for, which packages are
+allowed to depend on which, and a dependency graph — see
+[docs/adr/0001-monorepo-package-boundaries.md](docs/adr/0001-monorepo-package-boundaries.md).
 
 ---
 

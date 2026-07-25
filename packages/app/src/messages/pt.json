@@ -114,6 +114,7 @@
   },
   "tip": {
     "title": "Enviar Gorjeta",
+    "sendTip": "Enviar Gorjeta",
     "description": "Recompense {name} por um serviço excelente",
     "recipient": "Destinatário",
     "amount": "Valor",
@@ -139,7 +140,9 @@
     "transactionFailed": "Transação falhou",
     "tryAgain": "Tentar novamente",
     "signing": "Assinando…",
-    "ariaClose": "Fechar diálogo"
+    "ariaClose": "Fechar diálogo",
+    "cancel": "Cancelar",
+    "close": "Fechar"
   },
   "search": {
     "placeholder": "Buscar trabalhadores por nome ou habilidade...",

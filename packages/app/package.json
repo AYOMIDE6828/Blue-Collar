@@ -8,6 +8,7 @@
     "build": "next build",
     "start": "next start",
     "test": "vitest run",
+    "test:coverage": "vitest run --coverage",
     "test:a11y": "vitest run src/__tests__/accessibility",
     "test:e2e": "playwright test",
     "test:e2e:ui": "playwright test --ui",

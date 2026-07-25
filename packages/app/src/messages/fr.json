@@ -35,7 +35,12 @@
     "connecting": "Connexion…",
     "disconnectWallet": "Déconnecter le portefeuille",
     "testnet": "testnet",
-    "mainnet": "mainnet"
+    "mainnet": "mainnet",
+    "primaryNavigation": "Navigation principale",
+    "mobileMenu": "Menu principal",
+    "changeLanguage": "Changer de langue, langue actuelle {language}",
+    "accountMenu": "Menu du compte de {name}",
+    "walletMenu": "Menu du portefeuille"
   },
   "hero": {
     "title": "Trouvez des travailleurs qualifiés près de chez vous",

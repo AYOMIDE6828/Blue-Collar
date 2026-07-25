@@ -35,7 +35,12 @@
     "connecting": "Connecting…",
     "disconnectWallet": "Disconnect Wallet",
     "testnet": "testnet",
-    "mainnet": "mainnet"
+    "mainnet": "mainnet",
+    "primaryNavigation": "Main navigation",
+    "mobileMenu": "Main menu",
+    "changeLanguage": "Change language, current language {language}",
+    "accountMenu": "Account menu for {name}",
+    "walletMenu": "Wallet menu"
   },
   "hero": {
     "title": "Find Skilled Workers Near You",

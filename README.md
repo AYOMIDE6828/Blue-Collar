@@ -407,6 +407,11 @@ pnpm docker:down
 
 ## Getting Started
 
+> This section is a quick-start for `api` + `app` only. For a single guide covering
+> every package — `api`, `app`, `contracts`, `sdk`, `mobile`, `monitoring`, `types` —
+> plus environment variables and local Soroban/Stellar network setup, see
+> [docs/LOCAL_SETUP.md](docs/LOCAL_SETUP.md).
+
 ### Prerequisites
 
 - Node.js >= 20

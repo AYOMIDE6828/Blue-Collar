@@ -2,12 +2,12 @@
 
 import { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
-import { Search, SlidersHorizontal, Plus } from "lucide-react";
+import { Plus } from "lucide-react";
 import { getJobs, getCategories } from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
-import { cn } from "@/lib/utils";
+import SearchFilters from "@/components/SearchFilters";
 import JobListing from "@/components/JobListing";
-import type { Category, Meta } from "@/types";
+import type { Job, Category, Meta } from "@/types";
 
 export default function JobsPage() {
   const { user } = useAuth();
@@ -23,7 +23,6 @@ export default function JobsPage() {
   const [categoryId, setCategoryId] = useState("");
   const [urgency, setUrgency] = useState("");
   const [page, setPage] = useState(1);
-  const [showFilters, setShowFilters] = useState(false);
 
   const fetchJobs = useCallback(async () => {
     setLoading(true);
@@ -69,62 +68,18 @@ export default function JobsPage() {
         )}
       </div>
 
-      {/* Search bar */}
-      <div className="mb-4 flex gap-2">
-        <div className="relative flex-1">
-          <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-          <input
-            type="text"
-            placeholder="Search jobs…"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="w-full rounded-lg border bg-white py-2.5 pl-9 pr-4 text-sm outline-none focus:ring-2 focus:ring-blue-500"
-          />
-        </div>
-        <button
-          onClick={() => setShowFilters((v) => !v)}
-          className={cn(
-            "flex items-center gap-2 rounded-lg border px-4 py-2.5 text-sm font-medium transition-colors",
-            showFilters ? "border-blue-500 bg-blue-50 text-blue-600" : "bg-white text-gray-600 hover:bg-gray-50",
-          )}
-        >
-          <SlidersHorizontal size={15} /> Filters
-        </button>
+      {/* Search and Filters */}
+      <div className="mb-6">
+        <SearchFilters
+          search={search}
+          onSearchChange={setSearch}
+          categoryId={categoryId}
+          onCategoryChange={setCategoryId}
+          urgency={urgency}
+          onUrgencyChange={setUrgency}
+          categories={categories}
+        />
       </div>
-
-      {/* Filters panel */}
-      {showFilters && (
-        <div className="mb-6 flex flex-wrap gap-3 rounded-xl border bg-gray-50 p-4">
-          <select
-            value={categoryId}
-            onChange={(e) => setCategoryId(e.target.value)}
-            className="rounded-lg border bg-white px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-blue-500"
-          >
-            <option value="">All categories</option>
-            {categories.map((c) => (
-              <option key={c.id} value={c.id}>{c.name}</option>
-            ))}
-          </select>
-          <select
-            value={urgency}
-            onChange={(e) => setUrgency(e.target.value)}
-            className="rounded-lg border bg-white px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-blue-500"
-          >
-            <option value="">Any urgency</option>
-            <option value="urgent">🔴 Urgent</option>
-            <option value="normal">🔵 Normal</option>
-            <option value="low">⚪ Low</option>
-          </select>
-          {(categoryId || urgency) && (
-            <button
-              onClick={() => { setCategoryId(""); setUrgency(""); }}
-              className="rounded-lg border bg-white px-3 py-2 text-sm text-gray-500 hover:bg-gray-100"
-            >
-              Clear
-            </button>
-          )}
-        </div>
-      )}
 
       {/* Job grid */}
       <JobListing jobs={jobs} loading={loading} error={error} />

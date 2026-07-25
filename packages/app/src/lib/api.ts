@@ -19,6 +19,7 @@ import type {
   WorkerPersonalDashboard,
   AppNotification,
   AuditLogEntry,
+  Invoice,
 } from "@/types";
 
 const BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3000/api";
@@ -336,6 +337,11 @@ export const markConversationRead = (id: string) =>
 
 export const toggleReviewHelpful = (reviewId: string) =>
   request<{ data: { helpful: boolean; count: number }; status: string; code: number }>(`/v1/reviews/${reviewId}/helpful`, { method: "POST" });
+
+// ── Invoices ────────────────────────────────────────────────────────────────
+
+export const getInvoice = (invoiceId: string) =>
+  request<ApiResponse<Invoice>>(`/v1/invoices/${invoiceId}`);
 
 // ── Admin ──────────────────────────────────────────────────────────────────
 

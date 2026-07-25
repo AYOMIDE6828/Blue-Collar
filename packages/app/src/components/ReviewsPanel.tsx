@@ -12,7 +12,7 @@ import { useAuth } from "@/context/AuthContext";
 
 const PAGE_SIZE = 5;
 
-interface ReviewsSectionProps {
+interface ReviewsPanelProps {
   workerId: string;
   initialReviews: Review[];
   reviewCount: number;
@@ -20,13 +20,13 @@ interface ReviewsSectionProps {
   distribution: RatingDistributionEntry[];
 }
 
-export default function ReviewsSection({
+export default function ReviewsPanel({
   workerId,
   initialReviews,
   reviewCount,
   averageRating,
   distribution,
-}: ReviewsSectionProps) {
+}: ReviewsPanelProps) {
   const { user } = useAuth();
   const [reviews, setReviews] = useState<Review[]>(initialReviews);
   const [count, setCount] = useState<number>(reviewCount);

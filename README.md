@@ -44,6 +44,7 @@ Many skilled workers lack a platform to help them get noticed. Meanwhile, countl
 - [Contract Reference](docs/CONTRACTS.md)
 - [Contract Integration Guide](docs/CONTRACT_INTEGRATION.md)
 - [Contributing Guide](CONTRIBUTING.md)
+- [Error Handling & Logging Conventions](docs/ERROR_HANDLING_AND_LOGGING.md)
 - [Code of Conduct](CODE_OF_CONDUCT.md)
 - [Frontend Contributing Guide](packages/app/CONTRIBUTING.md)
 - [i18n & Translation Guide](docs/i18n-translations.md)

@@ -114,6 +114,7 @@
   },
   "tip": {
     "title": "Envoyer un pourboire",
+    "sendTip": "Envoyer un pourboire",
     "description": "Récompenser {name} pour un service excellent",
     "recipient": "Destinataire",
     "amount": "Montant",
@@ -139,7 +140,9 @@
     "transactionFailed": "Échec de la transaction",
     "tryAgain": "Réessayer",
     "signing": "Signature…",
-    "ariaClose": "Fermer la boîte de dialogue"
+    "ariaClose": "Fermer la boîte de dialogue",
+    "cancel": "Annuler",
+    "close": "Fermer"
   },
   "search": {
     "placeholder": "Rechercher des travailleurs par nom ou compétence...",

@@ -1,150 +1,169 @@
 "use client";
 
-import { useState } from "react";
-import { Search, SlidersHorizontal } from "lucide-react";
-import { cn } from "@/lib/utils";
-import type { Category } from "@/types";
+import { useState, useCallback } from "react";
+import type { ReactNode } from "react";
+
+interface FilterOption {
+  id: string;
+  label: string;
+}
 
 interface SearchFiltersProps {
-  search: string;
-  onSearchChange: (value: string) => void;
-  categoryId: string;
-  onCategoryChange: (value: string) => void;
-  urgency: string;
-  onUrgencyChange: (value: string) => void;
-  categories: Category[];
-  onClear?: () => void;
+  categories?: FilterOption[];
+  ratings?: FilterOption[];
+  locations?: FilterOption[];
+  onFilterChange?: (filters: SelectedFilters) => void;
+  children?: ReactNode;
+}
+
+export interface SelectedFilters {
+  categories: string[];
+  ratings: string[];
+  locations: string[];
 }
 
 export default function SearchFilters({
-  search,
-  onSearchChange,
-  categoryId,
-  onCategoryChange,
-  urgency,
-  onUrgencyChange,
-  categories,
-  onClear,
+  categories = [],
+  ratings = [],
+  locations = [],
+  onFilterChange,
 }: SearchFiltersProps) {
-  const [showFilters, setShowFilters] = useState(false);
-  const hasActiveFilters = categoryId || urgency;
+  const [selectedFilters, setSelectedFilters] = useState<SelectedFilters>({
+    categories: [],
+    ratings: [],
+    locations: [],
+  });
 
-  const handleClear = () => {
-    onCategoryChange("");
-    onUrgencyChange("");
-    onClear?.();
-  };
+  const handleCategoryChange = useCallback(
+    (categoryId: string) => {
+      setSelectedFilters((prev) => {
+        const updated = {
+          ...prev,
+          categories: prev.categories.includes(categoryId)
+            ? prev.categories.filter((id) => id !== categoryId)
+            : [...prev.categories, categoryId],
+        };
+        onFilterChange?.(updated);
+        return updated;
+      });
+    },
+    [onFilterChange]
+  );
 
-  const handleFilterToggle = () => {
-    setShowFilters((prev) => !prev);
-  };
+  const handleRatingChange = useCallback(
+    (ratingId: string) => {
+      setSelectedFilters((prev) => {
+        const updated = {
+          ...prev,
+          ratings: prev.ratings.includes(ratingId)
+            ? prev.ratings.filter((id) => id !== ratingId)
+            : [...prev.ratings, ratingId],
+        };
+        onFilterChange?.(updated);
+        return updated;
+      });
+    },
+    [onFilterChange]
+  );
 
-  const handleFilterKeyDown = (e: React.KeyboardEvent<HTMLButtonElement>) => {
-    if (e.key === "Enter" || e.key === " ") {
-      e.preventDefault();
-      handleFilterToggle();
-    }
-  };
+  const handleLocationChange = useCallback(
+    (locationId: string) => {
+      setSelectedFilters((prev) => {
+        const updated = {
+          ...prev,
+          locations: prev.locations.includes(locationId)
+            ? prev.locations.filter((id) => id !== locationId)
+            : [...prev.locations, locationId],
+        };
+        onFilterChange?.(updated);
+        return updated;
+      });
+    },
+    [onFilterChange]
+  );
+
+  const handleClearFilters = useCallback(() => {
+    const cleared = { categories: [], ratings: [], locations: [] };
+    setSelectedFilters(cleared);
+    onFilterChange?.(cleared);
+  }, [onFilterChange]);
+
+  const hasActiveFilters =
+    selectedFilters.categories.length > 0 ||
+    selectedFilters.ratings.length > 0 ||
+    selectedFilters.locations.length > 0;
 
   return (
-    <div className="space-y-4">
-      {/* Search bar */}
-      <div className="flex gap-2">
-        <div className="relative flex-1">
-          <label htmlFor="job-search" className="sr-only">Search jobs</label>
-          <Search
-            size={16}
-            className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
-            aria-hidden="true"
-          />
-          <input
-            id="job-search"
-            type="text"
-            placeholder="Search jobs…"
-            value={search}
-            onChange={(e) => onSearchChange(e.target.value)}
-            className="w-full rounded-lg border bg-white py-2.5 pl-9 pr-4 text-sm outline-none focus:ring-2 focus:ring-blue-500"
-            aria-label="Search jobs by title or keywords"
-          />
-        </div>
-        <button
-          onClick={handleFilterToggle}
-          onKeyDown={handleFilterKeyDown}
-          className={cn(
-            "flex items-center gap-2 rounded-lg border px-4 py-2.5 text-sm font-medium transition-colors",
-            showFilters
-              ? "border-blue-500 bg-blue-50 text-blue-600"
-              : "bg-white text-gray-600 hover:bg-gray-50",
-          )}
-          aria-label={showFilters ? "Hide filters" : "Show filters"}
-          aria-expanded={showFilters}
-          aria-controls="filters-panel"
-        >
-          <SlidersHorizontal size={15} aria-hidden="true" /> Filters
-        </button>
+    <div className="space-y-4 rounded-lg border border-gray-200 bg-white p-4 dark:border-gray-700 dark:bg-gray-900">
+      <div className="flex items-center justify-between">
+        <h3 className="font-semibold text-gray-900 dark:text-gray-100">Filters</h3>
+        {hasActiveFilters && (
+          <button
+            onClick={handleClearFilters}
+            className="text-xs text-blue-600 hover:underline dark:text-blue-400"
+          >
+            Clear all
+          </button>
+        )}
       </div>
 
-      {/* Filters panel */}
-      {showFilters && (
-        <div
-          id="filters-panel"
-          className="rounded-xl border bg-gray-50 p-4"
-          role="region"
-          aria-label="Job filters"
-        >
-          <fieldset className="flex flex-wrap gap-3">
-            <legend className="sr-only">Filter jobs by category and urgency</legend>
-
-            <div className="flex flex-col gap-1">
-              <label htmlFor="category-select" className="text-xs font-medium text-gray-600">
-                Category
-              </label>
-              <select
-                id="category-select"
-                value={categoryId}
-                onChange={(e) => onCategoryChange(e.target.value)}
-                className="rounded-lg border bg-white px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-blue-500"
-                aria-label="Filter jobs by category"
-              >
-                <option value="">All categories</option>
-                {categories.map((c) => (
-                  <option key={c.id} value={c.id}>
-                    {c.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div className="flex flex-col gap-1">
-              <label htmlFor="urgency-select" className="text-xs font-medium text-gray-600">
-                Urgency
-              </label>
-              <select
-                id="urgency-select"
-                value={urgency}
-                onChange={(e) => onUrgencyChange(e.target.value)}
-                className="rounded-lg border bg-white px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-blue-500"
-                aria-label="Filter jobs by urgency level"
-              >
-                <option value="">Any urgency</option>
-                <option value="urgent">🔴 Urgent</option>
-                <option value="normal">🔵 Normal</option>
-                <option value="low">⚪ Low</option>
-              </select>
-            </div>
-
-            {hasActiveFilters && (
-              <button
-                onClick={handleClear}
-                className="rounded-lg border bg-white px-3 py-2 text-sm text-gray-500 hover:bg-gray-100 transition-colors self-end"
-                aria-label="Clear all active filters"
-              >
-                Clear
-              </button>
-            )}
-          </fieldset>
-        </div>
+      {categories.length > 0 && (
+        <FilterSection
+          title="Categories"
+          options={categories}
+          selected={selectedFilters.categories}
+          onChange={handleCategoryChange}
+        />
       )}
+
+      {ratings.length > 0 && (
+        <FilterSection
+          title="Ratings"
+          options={ratings}
+          selected={selectedFilters.ratings}
+          onChange={handleRatingChange}
+        />
+      )}
+
+      {locations.length > 0 && (
+        <FilterSection
+          title="Locations"
+          options={locations}
+          selected={selectedFilters.locations}
+          onChange={handleLocationChange}
+        />
+      )}
+    </div>
+  );
+}
+
+interface FilterSectionProps {
+  title: string;
+  options: FilterOption[];
+  selected: string[];
+  onChange: (id: string) => void;
+}
+
+function FilterSection({ title, options, selected, onChange }: FilterSectionProps) {
+  return (
+    <div className="space-y-2 border-t border-gray-200 pt-4 first:border-0 first:pt-0 dark:border-gray-700">
+      <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300">{title}</h4>
+      <div className="space-y-2">
+        {options.map((option) => (
+          <label
+            key={option.id}
+            className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400"
+          >
+            <input
+              type="checkbox"
+              checked={selected.includes(option.id)}
+              onChange={() => onChange(option.id)}
+              className="rounded border-gray-300"
+            />
+            {option.label}
+          </label>
+        ))}
+      </div>
     </div>
   );
 }

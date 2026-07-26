@@ -9,6 +9,7 @@ import {
 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { cn } from "@/lib/utils";
+import LoadingState from "@/components/LoadingState";
 import {
   getJob, applyToJob, withdrawJobApplication, getJobApplications,
   updateJobApplicationStatus, getJobMessages, sendJobMessage, renewJob,
@@ -147,11 +148,7 @@ export default function JobDetailPage() {
   };
 
   if (loading) {
-    return (
-      <div className="flex justify-center py-32">
-        <Loader2 className="animate-spin text-gray-400" size={28} />
-      </div>
-    );
+    return <LoadingState className="py-32" />;
   }
 
   if (!job) {

@@ -1,10 +1,11 @@
 "use client";
 
 import { useCallback, useEffect, useId, useState } from "react";
-import { AlertTriangle, Download, ExternalLink, FileText } from "lucide-react";
-import { getInvoice } from "@/lib/api";
+import { Download, ExternalLink, FileText } from "lucide-react";
+import { getInvoice } from "@/lib/api/payments";
 import { formatErrorMessage } from "@/lib/errors";
 import { cn } from "@/lib/utils";
+import ErrorState from "@/components/ErrorState";
 import type { Invoice, InvoiceStatus } from "@/types";
 
 const STELLAR_EXPLORER = "https://stellar.expert/explorer/testnet/tx";
@@ -119,25 +120,7 @@ export default function InvoiceView({
   }
 
   if (error) {
-    return (
-      <div
-        role="alert"
-        className={cn(
-          "flex flex-col items-center gap-3 rounded-xl border border-red-200 bg-red-50 p-6 text-center dark:border-red-900 dark:bg-red-950/40",
-          className,
-        )}
-      >
-        <AlertTriangle size={22} className="text-red-500" aria-hidden="true" />
-        <p className="text-sm text-red-700 dark:text-red-300">{error}</p>
-        <button
-          type="button"
-          onClick={() => void load()}
-          className="rounded-lg bg-red-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-red-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-red-500"
-        >
-          Try again
-        </button>
-      </div>
-    );
+    return <ErrorState message={error} onRetry={() => void load()} className={className} />;
   }
 
   // Nothing to render and nothing failed — treat as not found rather than

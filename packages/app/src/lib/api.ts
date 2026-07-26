@@ -19,76 +19,10 @@ import type {
   WorkerPersonalDashboard,
   AppNotification,
   AuditLogEntry,
-  Invoice,
 } from "@/types";
-
-const BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3000/api";
-const TOKEN_KEY = "bc_token";
-
-// ─── Core fetch wrapper ───────────────────────────────────────────────────────
-
-interface RequestOptions extends Omit<RequestInit, "body"> {
-  body?: unknown;
-  /** Skip JSON serialisation — used for FormData uploads */
-  rawBody?: BodyInit;
-}
-
-async function request<T>(path: string, options: RequestOptions = {}): Promise<T> {
-  const { body, rawBody, headers: extraHeaders, ...rest } = options;
-
-  const token = typeof window !== "undefined" ? localStorage.getItem(TOKEN_KEY) : null;
-
-  const headers: Record<string, string> = {
-    ...(token ? { Authorization: `Bearer ${token}` } : {}),
-    ...(body !== undefined ? { "Content-Type": "application/json" } : {}),
-    ...(extraHeaders as Record<string, string>),
-  };
-
-  const res = await fetch(`${BASE}${path}`, {
-    ...rest,
-    headers,
-    body: rawBody ?? (body !== undefined ? JSON.stringify(body) : undefined),
-  });
-
-  // 401 — clear token and redirect to login
-  if (res.status === 401 && typeof window !== "undefined") {
-    localStorage.removeItem(TOKEN_KEY);
-    window.location.href = "/auth/login";
-    throw new Error("Unauthorized");
-  }
-
-  const json = await res.json().catch(() => ({}));
-  if (!res.ok) throw new Error((json as { message?: string }).message ?? "Request failed");
-  return json as T;
-}
+import { BASE, request } from "./api/client";
 
 // ─── Typed endpoint functions ─────────────────────────────────────────────────
-
-// Auth
-export const login = (email: string, password: string) =>
-  request<{ data: unknown; token: string }>("/auth/login", {
-    method: "POST",
-    body: { email, password },
-  });
-
-export const register = (data: {
-  firstName: string;
-  lastName: string;
-  email: string;
-  password: string;
-}) => request<{ data: unknown }>("/auth/register", { method: "POST", body: data });
-
-export const forgotPassword = (email: string) =>
-  request<{ message: string }>("/auth/forgot-password", { method: "POST", body: { email } });
-
-export const resetPassword = (token: string, password: string) =>
-  request<{ message: string }>("/auth/reset-password", {
-    method: "PUT",
-    body: { token, password },
-  });
-
-export const getMe = () =>
-  request<ApiResponse<unknown>>("/auth/me");
 
 // Workers
 export const getWorkers = (params?: Record<string, string>) => {
@@ -196,82 +130,6 @@ export const exportCuratorAnalyticsCsv = () =>
 export const exportPlatformAnalyticsCsv = () =>
   `${BASE}/analytics/export/platform`;
 
-// ─── Jobs ─────────────────────────────────────────────────────────────────────
-
-import type { Job, JobApplication, JobMessage, PaginatedResponse } from "@/types";
-
-export interface ListJobsParams {
-  categoryId?: string;
-  status?: string;
-  search?: string;
-  skills?: string;
-  urgency?: string;
-  minBudget?: number;
-  maxBudget?: number;
-  page?: number;
-  limit?: number;
-}
-
-export const getJobs = (params?: ListJobsParams) => {
-  const qs = params ? `?${new URLSearchParams(Object.entries(params).filter(([, v]) => v !== undefined).map(([k, v]) => [k, String(v)])).toString()}` : "";
-  return request<PaginatedResponse<Job>>(`/v1/jobs${qs}`);
-};
-
-export const getJob = (id: string) =>
-  request<{ data: Job; status: string }>(`/v1/jobs/${id}`);
-
-export const createJob = (data: {
-  title: string;
-  description: string;
-  budget?: number;
-  skills?: string[];
-  urgency?: string;
-  categoryId: string;
-  locationId?: string;
-  expiresAt?: string;
-  escrowAmount?: number;
-}) => request<{ data: Job }>("/v1/jobs", { method: "POST", body: data });
-
-export const updateJob = (id: string, data: Partial<Parameters<typeof createJob>[0] & { status?: string }>) =>
-  request<{ data: Job }>(`/v1/jobs/${id}`, { method: "PUT", body: data });
-
-export const deleteJob = (id: string) =>
-  request<void>(`/v1/jobs/${id}`, { method: "DELETE" });
-
-export const renewJob = (id: string, days = 30) =>
-  request<{ data: Job }>(`/v1/jobs/${id}/renew`, { method: "POST", body: { days } });
-
-export const getMyPostedJobs = (params?: { page?: number; limit?: number }) => {
-  const qs = params ? `?${new URLSearchParams(Object.entries(params).filter(([, v]) => v !== undefined).map(([k, v]) => [k, String(v)])).toString()}` : "";
-  return request<PaginatedResponse<Job>>(`/v1/jobs/me/posted${qs}`);
-};
-
-export const getMyApplications = (workerId: string, params?: { page?: number; limit?: number }) => {
-  const qs = new URLSearchParams({ workerId, ...(params?.page ? { page: String(params.page) } : {}), ...(params?.limit ? { limit: String(params.limit) } : {}) }).toString();
-  return request<PaginatedResponse<JobApplication>>(`/v1/jobs/me/applications?${qs}`);
-};
-
-export const getRecommendedJobs = (workerId: string) =>
-  request<{ data: Job[] }>(`/v1/jobs/recommendations/${workerId}`);
-
-export const applyToJob = (jobId: string, data: { workerId: string; coverLetter?: string; proposedRate?: number }) =>
-  request<{ data: JobApplication }>(`/v1/jobs/${jobId}/apply`, { method: "POST", body: data });
-
-export const withdrawJobApplication = (jobId: string, workerId: string) =>
-  request<{ data: JobApplication }>(`/v1/jobs/${jobId}/apply`, { method: "DELETE", body: { workerId } });
-
-export const getJobApplications = (jobId: string) =>
-  request<{ data: JobApplication[] }>(`/v1/jobs/${jobId}/applications`);
-
-export const updateJobApplicationStatus = (jobId: string, applicationId: string, status: "accepted" | "rejected") =>
-  request<{ data: JobApplication }>(`/v1/jobs/${jobId}/applications/${applicationId}`, { method: "PATCH", body: { status } });
-
-export const sendJobMessage = (jobId: string, data: { recipientId: string; body: string }) =>
-  request<{ data: JobMessage }>(`/v1/jobs/${jobId}/messages`, { method: "POST", body: data });
-
-export const getJobMessages = (jobId: string) =>
-  request<{ data: JobMessage[] }>(`/v1/jobs/${jobId}/messages`);
-
 // ── Notifications ───────────────────────────────────────────────────────────
 
 export const getNotifications = (params?: { page?: number; limit?: number }) => {
@@ -337,11 +195,6 @@ export const markConversationRead = (id: string) =>
 
 export const toggleReviewHelpful = (reviewId: string) =>
   request<{ data: { helpful: boolean; count: number }; status: string; code: number }>(`/v1/reviews/${reviewId}/helpful`, { method: "POST" });
-
-// ── Invoices ────────────────────────────────────────────────────────────────
-
-export const getInvoice = (invoiceId: string) =>
-  request<ApiResponse<Invoice>>(`/v1/invoices/${invoiceId}`);
 
 // ── Admin ──────────────────────────────────────────────────────────────────
 

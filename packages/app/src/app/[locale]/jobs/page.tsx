@@ -3,10 +3,12 @@
 import { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
 import { Search, SlidersHorizontal, Plus, Briefcase } from "lucide-react";
-import { getJobs, getCategories } from "@/lib/api";
+import { getCategories } from "@/lib/api";
+import { getJobs } from "@/lib/api/jobs";
 import { useAuth } from "@/context/AuthContext";
 import { cn } from "@/lib/utils";
 import JobCard from "@/components/JobCard";
+import ErrorState from "@/components/ErrorState";
 import type { Job, Category, Meta } from "@/types";
 
 export default function JobsPage() {
@@ -82,9 +84,7 @@ export default function JobsPage() {
       </div>
 
       {/* Job grid */}
-      {error && (
-        <p className="mb-6 rounded-lg bg-red-50 px-4 py-3 text-sm text-red-600">{error}</p>
-      )}
+      {error && <ErrorState variant="inline" message={error} className="mb-6" />}
 
       {loading ? (
         <div className="grid gap-4 sm:grid-cols-2">

@@ -7,6 +7,7 @@ import Link from "next/link";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/useToast";
 import { formatDate } from "@/lib/utils";
+import LoadingState from "@/components/LoadingState";
 
 const API = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3000/api";
 const TOKEN_KEY = "bc_token";
@@ -105,9 +106,7 @@ export default function AdminDisputesPage() {
       </div>
 
       {loading ? (
-        <div className="flex justify-center py-12">
-          <div className="h-6 w-6 animate-spin rounded-full border-2 border-blue-600 border-t-transparent" />
-        </div>
+        <LoadingState className="py-12" />
       ) : disputes.length === 0 ? (
         <div className="flex flex-col items-center justify-center gap-3 py-20 text-gray-400">
           <Scale size={40} className="opacity-30" />

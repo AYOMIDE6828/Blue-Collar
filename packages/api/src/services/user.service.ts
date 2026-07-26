@@ -5,7 +5,7 @@ import { z } from 'zod'
 import { db } from '../db.js'
 import { sendVerificationEmail } from '../mailer/index.js'
 import { sanitizeUser } from '../models/user.model.js'
-import { AppError } from './AppError.js'
+import { AppError, ErrorCode } from '../utils/AppError.js'
 import { createServiceLogger } from '../utils/logger.js'
 import { userRepository } from '../repositories/user.repository.js'
 
@@ -34,7 +34,7 @@ export async function updateProfile(userId: string, input: UpdateProfileInput) {
   const current = await userRepository.findById(userId)
   if (!current) {
     logger.warn('Profile update failed: user not found', { userId })
-    throw new AppError('User not found', 404)
+    throw new AppError('User not found', 404, true, ErrorCode.NOT_FOUND)
   }
 
   const emailChanged = parsed.email !== undefined && parsed.email !== current.email
@@ -66,13 +66,13 @@ export async function changePassword(
   currentPassword: string,
   newPassword: string,
 ): Promise<void> {
-  if (newPassword.length < 8) throw new AppError('Password must be at least 8 characters', 400)
+  if (newPassword.length < 8) throw new AppError('Password must be at least 8 characters', 400, true, ErrorCode.VALIDATION_ERROR)
 
   const user = await userRepository.findById(userId)
-  if (!user || !user.password) throw new AppError('No password set on this account', 400)
+  if (!user || !user.password) throw new AppError('No password set on this account', 400, true, ErrorCode.VALIDATION_ERROR)
 
   const valid = await argon2.verify(user.password, currentPassword)
-  if (!valid) throw new AppError('Current password is incorrect', 400)
+  if (!valid) throw new AppError('Current password is incorrect', 400, true, ErrorCode.VALIDATION_ERROR)
 
   const hashed = await argon2.hash(newPassword)
   await userRepository.update(userId, { password: hashed })

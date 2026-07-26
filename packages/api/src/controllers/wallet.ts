@@ -1,7 +1,7 @@
 import { Request, Response } from 'express'
 import * as walletService from '../services/wallet.service.js'
 import { catchAsync } from '../utils/catchAsync.js'
-import { validateRequest } from '../middleware/validate.js'
+import { AppError, ErrorCode } from '../utils/AppError.js'
 import { z } from 'zod'
 
 // Validation schemas
@@ -20,7 +20,7 @@ const pollTxSchema = z.object({
 export const getBalance = catchAsync(async (req: Request, res: Response) => {
   const userId = req.user?.id
   if (!userId) {
-    return res.status(401).json({ message: 'Unauthorized' })
+    throw new AppError('Unauthorized', 401, true, ErrorCode.UNAUTHORIZED)
   }
 
   const data = await walletService.getUserBalance(userId)
@@ -55,11 +55,15 @@ export const getAccountInfo = catchAsync(async (req: Request, res: Response) => 
 export const linkWallet = catchAsync(async (req: Request, res: Response) => {
   const userId = req.user?.id
   if (!userId) {
-    return res.status(401).json({ message: 'Unauthorized' })
+    throw new AppError('Unauthorized', 401, true, ErrorCode.UNAUTHORIZED)
   }
 
-  const validated = validateRequest(req.body, linkWalletSchema)
-  const account = await walletService.linkStellarAccount(userId, validated.publicKey)
+  const parsed = linkWalletSchema.safeParse(req.body)
+  if (!parsed.success) {
+    throw new AppError('Invalid public key', 400, true, ErrorCode.VALIDATION_ERROR)
+  }
+
+  const account = await walletService.linkStellarAccount(userId, parsed.data.publicKey)
 
   res.status(201).json({
     status: 'success',
@@ -77,11 +81,7 @@ export const buildTransaction = catchAsync(async (req: Request, res: Response) =
   const { sourcePublicKey, destinationPublicKey, amount, memo } = req.body
 
   if (!sourcePublicKey || !destinationPublicKey || !amount) {
-    return res.status(400).json({
-      status: 'error',
-      code: 400,
-      message: 'Missing required fields',
-    })
+    throw new AppError('Missing required fields', 400, true, ErrorCode.VALIDATION_ERROR)
   }
 
   const tx = await walletService.buildUnsignedTx(
@@ -106,11 +106,7 @@ export const broadcastTx = catchAsync(async (req: Request, res: Response) => {
   const { signedXdr } = req.body
 
   if (!signedXdr) {
-    return res.status(400).json({
-      status: 'error',
-      code: 400,
-      message: 'signedXdr is required',
-    })
+    throw new AppError('signedXdr is required', 400, true, ErrorCode.VALIDATION_ERROR)
   }
 
   const result = await walletService.broadcastTransaction(signedXdr)
@@ -146,11 +142,7 @@ export const fundTestnet = catchAsync(async (req: Request, res: Response) => {
   const { publicKey } = req.body
 
   if (!publicKey) {
-    return res.status(400).json({
-      status: 'error',
-      code: 400,
-      message: 'publicKey is required',
-    })
+    throw new AppError('publicKey is required', 400, true, ErrorCode.VALIDATION_ERROR)
   }
 
   const result = await walletService.fundTestnetAccount(publicKey)

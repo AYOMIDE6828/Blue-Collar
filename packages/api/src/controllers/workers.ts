@@ -1,8 +1,8 @@
 import type { Request, Response } from 'express'
 import * as workerService from '../services/worker.service.js'
-import { searchWorkers } from '../services/search.service.js'
+import * as searchService from '../services/search.service.js'
 import { handleError } from '../utils/handleError.js'
-import { WorkerResource } from '../resources/index.js'
+import { catchAsync } from '../utils/catchAsync.js'
 import { workerSerializer } from '../serializers/index.js'
 import type { CreateWorkerBody, UpdateWorkerBody } from '../interfaces/index.js'
 import { invalidateCachePattern } from '../middleware/cache.js'
@@ -256,99 +256,84 @@ export async function listMyWorkers(req: Request, res: Response) {
   return res.json({ ...result, status: 'success', code: 200 })
 }
 
+export type SearchService = Pick<typeof searchService, 'searchWorkers' | 'performAdvancedSearch'>
+
 /**
- * GET /api/workers/search
- * Full-text worker search with ranked results, geo radius, rating, and availability filters.
- * Issue #747
+ * Builds the /search route handlers on top of an injected search service.
+ * Defaults to the real `search.service.js` module so route wiring is
+ * unchanged; tests can pass a fake service to exercise handlers in isolation.
  */
-export async function searchWorkersHandler(req: Request, res: Response) {
-  try {
-    const {
-      q, query, lang, lat, lng, radius,
-      categories, minRating, maxRating,
-      dayOfWeek, isVerified, sortBy,
-      page = '1', limit = '20',
-    } = req.query
+export function createSearchHandlers(service: SearchService = searchService) {
+  return {
+    /**
+     * GET /api/workers/search
+     * Full-text worker search with ranked results, geo radius, rating, and availability filters.
+     * Issue #747
+     */
+    searchWorkersHandler: catchAsync(async (req: Request, res: Response) => {
+      const {
+        q, query, lang, lat, lng, radius,
+        categories, minRating, maxRating,
+        dayOfWeek, isVerified, sortBy,
+        page = '1', limit = '20',
+      } = req.query
 
-    const result = await searchWorkers({
-      query: (q || query) ? String(q ?? query) : undefined,
-      lang: lang ? String(lang) : undefined,
-      lat: lat ? Number(lat) : undefined,
-      lng: lng ? Number(lng) : undefined,
-      radius: radius ? Number(radius) : undefined,
-      categories: categories ? String(categories).split(',').map(c => c.trim()).filter(Boolean) : undefined,
-      minRating: minRating ? Number(minRating) : undefined,
-      maxRating: maxRating ? Number(maxRating) : undefined,
-      dayOfWeek: dayOfWeek !== undefined ? Number(dayOfWeek) : undefined,
-      isVerified: isVerified !== undefined ? isVerified === 'true' : undefined,
-      sortBy: sortBy as any,
-      page: Number(page),
-      limit: Math.min(Math.max(Number(limit) || 20, 1), 100),
-    }, req.ip)
+      const result = await service.searchWorkers({
+        query: (q || query) ? String(q ?? query) : undefined,
+        lang: lang ? String(lang) : undefined,
+        lat: lat ? Number(lat) : undefined,
+        lng: lng ? Number(lng) : undefined,
+        radius: radius ? Number(radius) : undefined,
+        categories: categories ? String(categories).split(',').map(c => c.trim()).filter(Boolean) : undefined,
+        minRating: minRating ? Number(minRating) : undefined,
+        maxRating: maxRating ? Number(maxRating) : undefined,
+        dayOfWeek: dayOfWeek !== undefined ? Number(dayOfWeek) : undefined,
+        isVerified: isVerified !== undefined ? isVerified === 'true' : undefined,
+        sortBy: sortBy as any,
+        page: Number(page),
+        limit: Math.min(Math.max(Number(limit) || 20, 1), 100),
+      }, req.ip)
 
-    return res.json({ ...result, status: 'success', code: 200 })
-  } catch (error) {
-    return handleError(res, error)
+      return res.json({ ...result, status: 'success', code: 200 })
+    }),
+
+    /**
+     * GET /api/workers/search/advanced
+     * Advanced search with filtering by location, rating, availability, and categories.
+     *
+     * @param req - Query params: query, lat, lng, radius, categories, minRating, maxRating, dayOfWeek, startTime, endTime, isVerified, sortBy, page, limit
+     * @param res - JSON with paginated results, total count, and hasMore flag
+     */
+    advancedSearch: catchAsync(async (req: Request, res: Response) => {
+      const {
+        query, lat, lng, radius, categories, minRating, maxRating,
+        dayOfWeek, startTime, endTime, isVerified, sortBy,
+        page = '1', limit = '20',
+      } = req.query
+
+      const result = await service.performAdvancedSearch({
+        query: query ? String(query) : undefined,
+        lat: lat ? Number(lat) : undefined,
+        lng: lng ? Number(lng) : undefined,
+        radius: radius ? Number(radius) : undefined,
+        categories: categories ? String(categories).split(',').map(c => c.trim()).filter(Boolean) : undefined,
+        minRating: minRating ? Number(minRating) : undefined,
+        maxRating: maxRating ? Number(maxRating) : undefined,
+        dayOfWeek: dayOfWeek ? Number(dayOfWeek) : undefined,
+        startTime: startTime ? String(startTime) : undefined,
+        endTime: endTime ? String(endTime) : undefined,
+        isVerified: isVerified !== undefined ? isVerified === 'true' : undefined,
+        sortBy: sortBy ? String(sortBy) : undefined,
+        page: Number(page),
+        limit: Number(limit),
+      }, req.ip || 'unknown')
+
+      return res.json({ ...result, status: 'success', code: 200 })
+    }),
   }
 }
 
-/**
- * GET /api/workers/search/advanced
- * Advanced search with filtering by location, rating, availability, and categories.
- *
- * @param req - Query params: query, lat, lng, radius, categories, minRating, maxRating, dayOfWeek, startTime, endTime, isVerified, sortBy, page, limit
- * @param res - JSON with paginated results, total count, and hasMore flag
- */
-export async function advancedSearch(req: Request, res: Response) {
-  try {
-    const {
-      query, lat, lng, radius, categories, minRating, maxRating,
-      dayOfWeek, startTime, endTime, isVerified, sortBy,
-      page = '1', limit = '20',
-    } = req.query
-
-    const limitNum = Math.min(Math.max(Number(limit) || 20, 1), 100)
-    const pageNum = Math.max(Number(page) || 1, 1)
-
-    const result = await workerService.advancedSearch({
-      query: query ? String(query) : undefined,
-      lat: lat ? Number(lat) : undefined,
-      lng: lng ? Number(lng) : undefined,
-      radius: radius ? Number(radius) : undefined,
-      categories: categories ? String(categories).split(',').map(c => c.trim()).filter(Boolean) : undefined,
-      minRating: minRating ? Number(minRating) : undefined,
-      maxRating: maxRating ? Number(maxRating) : undefined,
-      dayOfWeek: dayOfWeek ? Number(dayOfWeek) : undefined,
-      startTime: startTime ? String(startTime) : undefined,
-      endTime: endTime ? String(endTime) : undefined,
-      isVerified: isVerified !== undefined ? isVerified === 'true' : undefined,
-      sortBy: sortBy ? String(sortBy) : undefined,
-      skip: (pageNum - 1) * limitNum,
-      take: limitNum,
-    })
-
-    if (query) {
-      await workerService.trackSearchAnalytics(
-        String(query), result.data.length, !!(lat || categories || minRating), req.ip || 'unknown',
-      )
-    }
-
-    return res.json({
-      data: result.data.map(w => WorkerResource(w)),
-      meta: {
-        total: result.total,
-        page: pageNum,
-        limit: limitNum,
-        hasMore: result.hasMore,
-        pages: Math.ceil(result.total / limitNum),
-      },
-      status: 'success',
-      code: 200,
-    })
-  } catch (error) {
-    return handleError(res, error)
-  }
-}
+export const { searchWorkersHandler, advancedSearch } = createSearchHandlers()
 
 /**
  * GET /api/workers/:id/reputation

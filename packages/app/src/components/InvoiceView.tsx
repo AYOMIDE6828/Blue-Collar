@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useId, useState } from "react";
 import { AlertTriangle, Download, ExternalLink, FileText } from "lucide-react";
-import { getInvoice } from "@/lib/api";
+import { getInvoice } from "@/lib/api/payments";
 import { formatErrorMessage } from "@/lib/errors";
 import { cn } from "@/lib/utils";
 import type { Invoice, InvoiceStatus } from "@/types";

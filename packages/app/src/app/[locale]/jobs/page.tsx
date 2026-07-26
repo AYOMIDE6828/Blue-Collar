@@ -3,7 +3,8 @@
 import { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
 import { Search, SlidersHorizontal, Plus, Briefcase } from "lucide-react";
-import { getJobs, getCategories } from "@/lib/api";
+import { getCategories } from "@/lib/api";
+import { getJobs } from "@/lib/api/jobs";
 import { useAuth } from "@/context/AuthContext";
 import { cn } from "@/lib/utils";
 import JobCard from "@/components/JobCard";

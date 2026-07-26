@@ -13,7 +13,7 @@ import {
   getJob, applyToJob, withdrawJobApplication, getJobApplications,
   updateJobApplicationStatus, getJobMessages, sendJobMessage, renewJob,
   getMyApplications,
-} from "@/lib/api";
+} from "@/lib/api/jobs";
 import type { Job, JobApplication, JobMessage } from "@/types";
 
 const STATUS_STYLE: Record<string, string> = {

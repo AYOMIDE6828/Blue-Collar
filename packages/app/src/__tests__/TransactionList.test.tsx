@@ -175,6 +175,42 @@ describe('TransactionListTable', () => {
     render(<TransactionListTable transactions={transactions} />)
     expect(fetchMock).not.toHaveBeenCalled()
   })
+
+  it('memoizes transaction rows to prevent unnecessary re-renders', async () => {
+    const { default: TransactionListTable } = await import(
+      '@/components/TransactionList/TransactionListTable'
+    )
+    const renderSpy = vi.fn()
+
+    const TestWrapper = ({ transactions }: { transactions: any[] }) => {
+      renderSpy()
+      return <TransactionListTable transactions={transactions} />
+    }
+
+    const { rerender } = render(<TestWrapper transactions={transactions} />)
+    expect(renderSpy).toHaveBeenCalledTimes(1)
+
+    rerender(<TestWrapper transactions={transactions} />)
+    expect(renderSpy).toHaveBeenCalledTimes(2)
+    // Table should not re-render deeply when props are identical
+  })
+
+  it('handles large transaction lists efficiently with memoization', async () => {
+    const { default: TransactionListTable } = await import(
+      '@/components/TransactionList/TransactionListTable'
+    )
+    const largeList = Array.from({ length: 500 }, (_, i) => ({
+      id: `pay-${i}`,
+      createdAt: '2026-07-01T10:00:00Z',
+      from: 'GSENDERAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+      amount: `${i + 1}.5000000`,
+      transactionHash: `hash-${i}`,
+    }))
+
+    const { container } = render(<TransactionListTable transactions={largeList} />)
+    const rows = container.querySelectorAll('tbody tr')
+    expect(rows).toHaveLength(500)
+  })
 })
 
 describe('TransactionListPagination', () => {

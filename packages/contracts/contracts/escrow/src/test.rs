@@ -31,11 +31,11 @@ fn setup_env() -> (Env, Address, Address, Address, Address, Address) {
     (env, admin, depositor, beneficiary, token_addr, contract_id)
 }
 
-fn deploy_and_init(
-    env: &Env,
-    admin: &Address,
-    contract_id: &Address,
-) -> EscrowContractClient {
+fn deploy_and_init<'a>(
+    env: &'a Env,
+    admin: &'a Address,
+    contract_id: &'a Address,
+) -> EscrowContractClient<'a> {
     let client = EscrowContractClient::new(env, contract_id);
     client.initialize(admin);
     client.grant_role(admin, &Symbol::new(env, logic::ROLE_PAUSER), admin);
@@ -348,6 +348,25 @@ fn test_resolve_non_disputed_panics() {
     let id = Symbol::new(&env, "esc1");
     client.create_escrow(&depositor, &beneficiary, &token, &id, &5_000, &9_000);
     // Not disputed yet — must fail
+    client.resolve_dispute(&admin, &id, &true);
+}
+
+#[test]
+#[should_panic(expected = "Contract is paused")]
+fn test_resolve_dispute_while_paused_panics() {
+    // Regression test: every other fund-moving entry point (create/release/
+    // cancel/dispute) checks require_not_paused, but resolve_dispute did
+    // not — an emergency pause could be bypassed by an arbitrator still
+    // moving escrowed funds via dispute resolution.
+    let (env, admin, depositor, beneficiary, token, contract_id) = setup_env();
+    let client = deploy_and_init(&env, &admin, &contract_id);
+    set_time(&env, 1_000);
+
+    let id = Symbol::new(&env, "esc1");
+    client.create_escrow(&depositor, &beneficiary, &token, &id, &5_000, &9_000);
+    client.dispute_escrow(&depositor, &id);
+
+    client.pause(&admin);
     client.resolve_dispute(&admin, &id, &true);
 }
 

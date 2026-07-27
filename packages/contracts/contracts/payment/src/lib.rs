@@ -22,6 +22,7 @@
 #![no_std]
 
 use soroban_sdk::{contract, contractimpl, contracttype, symbol_short, token, Address, BytesN, Env, Symbol, Vec};
+use bluecollar_types::ContractError;
 
 /// Maximum protocol fee: 500 bps = 5 %.
 pub const MAX_FEE_BPS: u32 = 500;
@@ -146,9 +147,9 @@ impl PaymentContract {
         // --- Checks ---
         assert!(
             !env.storage().instance().has(&DataKey::Config),
-            "Already initialized"
+            ContractError::ALREADY_INITIALIZED
         );
-        assert!(fee_bps <= MAX_FEE_BPS, "fee_bps exceeds maximum (500)");
+        assert!(fee_bps <= MAX_FEE_BPS, ContractError::FEE_BPS_EXCEEDS_MAXIMUM);
 
         // --- Effects ---
         let config = Config { fee_bps, fee_recipient };
@@ -182,7 +183,7 @@ impl PaymentContract {
     fn require_role(env: &Env, role: &Symbol, caller: &Address) {
         caller.require_auth();
         let members = Self::get_role_members(env, role);
-        assert!(members.iter().any(|m| m == *caller), "Missing role");
+        assert!(members.iter().any(|m| m == *caller), ContractError::MISSING_ROLE);
     }
 
     fn require_not_paused(env: &Env) {
@@ -191,7 +192,7 @@ impl PaymentContract {
                 .instance()
                 .get::<_, bool>(&DataKey::Paused)
                 .unwrap_or(false),
-            "Contract is paused"
+            ContractError::CONTRACT_IS_PAUSED
         );
     }
 
@@ -273,7 +274,7 @@ impl PaymentContract {
     /// - `"Missing role"` if caller does not hold `ROLE_FEE_MGR`.
     pub fn update_fee(env: Env, caller: Address, new_fee_bps: u32) {
         Self::require_role(&env, &Symbol::new(&env, ROLE_FEE_MGR), &caller);
-        assert!(new_fee_bps <= MAX_FEE_BPS, "fee_bps exceeds maximum (500)");
+        assert!(new_fee_bps <= MAX_FEE_BPS, ContractError::FEE_BPS_EXCEEDS_MAXIMUM);
         let mut config = Self::get_config(&env);
         config.fee_bps = new_fee_bps;
         env.storage().instance().set(&DataKey::Config, &config);
@@ -317,7 +318,7 @@ impl PaymentContract {
         env.storage()
             .persistent()
             .get(&DataKey::Admin)
-            .expect("Not initialized")
+            .expect(ContractError::NOT_INITIALIZED)
     }
 
     pub fn get_config_view(env: Env) -> Config {
@@ -344,7 +345,7 @@ impl PaymentContract {
         // --- Checks ---
         Self::require_not_paused(&env);
         from.require_auth();
-        assert!(amount > 0, "Amount must be positive");
+        assert!(amount > 0, ContractError::AMOUNT_MUST_BE_POSITIVE);
         let config = Self::get_config(&env);
 
         // --- Effects (compute fee split) ---
@@ -386,16 +387,16 @@ impl PaymentContract {
         // --- Checks ---
         Self::require_not_paused(&env);
         from.require_auth();
-        assert!(amount > 0, "Amount must be positive");
+        assert!(amount > 0, ContractError::AMOUNT_MUST_BE_POSITIVE);
         assert!(
             expiry > env.ledger().timestamp(),
-            "expiry must be in future"
+            ContractError::EXPIRY_MUST_BE_IN_FUTURE
         );
         assert!(
             !env.storage()
                 .persistent()
                 .has(&DataKey::Payment(id.clone())),
-            "Already exists"
+            ContractError::ALREADY_EXISTS
         );
 
         // --- Effects ---
@@ -438,14 +439,14 @@ impl PaymentContract {
             .storage()
             .persistent()
             .get(&DataKey::Payment(id.clone()))
-            .expect("Payment not found");
+            .expect(ContractError::PAYMENT_NOT_FOUND);
 
         let is_client = record.client == caller;
         let is_admin = Self::get_role_members(&env, &Symbol::new(&env, ROLE_ADMIN))
             .iter()
             .any(|m| m == caller);
-        assert!(is_client || is_admin, "Not authorized");
-        assert!(record.status == PaymentStatus::Locked, "Payment not locked");
+        assert!(is_client || is_admin, ContractError::NOT_AUTHORIZED);
+        assert!(record.status == PaymentStatus::Locked, ContractError::PAYMENT_NOT_LOCKED);
 
         // --- Effects ---
         record.status = PaymentStatus::Released;
@@ -481,7 +482,7 @@ impl PaymentContract {
             .storage()
             .persistent()
             .get(&DataKey::Payment(id.clone()))
-            .expect("Payment not found");
+            .expect(ContractError::PAYMENT_NOT_FOUND);
 
         assert!(record.status == PaymentStatus::Locked, "Payment not locked");
 
@@ -516,7 +517,7 @@ impl PaymentContract {
         env.storage()
             .persistent()
             .get(&DataKey::Payment(id))
-            .expect("Payment not found")
+            .expect(ContractError::PAYMENT_NOT_FOUND)
     }
 
     /// Extend the TTL of a payment entry (permissionless).

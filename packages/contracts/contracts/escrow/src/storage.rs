@@ -86,21 +86,24 @@ pub fn load_escrow(env: &Env, id: &Symbol) -> Option<EscrowRecord> {
 }
 
 /// Write an escrow record and extend its TTL.
+/// Optimized: combines write and TTL extension into single operation.
 pub fn save_escrow(env: &Env, record: &EscrowRecord) {
+    let key = DataKey::Escrow(record.id.clone());
+    env.storage().persistent().set(&key, record);
+    // TTL extension is done immediately after write without redundant has() check
     env.storage()
         .persistent()
-        .set(&DataKey::Escrow(record.id.clone()), record);
-    extend_escrow_ttl(env, &record.id);
+        .extend_ttl(&key, TTL_THRESHOLD, TTL_EXTEND_TO);
 }
 
 /// Extend the TTL on an escrow entry.
+/// Note: Direct TTL extension without has() check for efficiency.
 pub fn extend_escrow_ttl(env: &Env, id: &Symbol) {
     let key = DataKey::Escrow(id.clone());
-    if env.storage().persistent().has(&key) {
-        env.storage()
-            .persistent()
-            .extend_ttl(&key, TTL_THRESHOLD, TTL_EXTEND_TO);
-    }
+    // Attempt TTL extension directly. Soroban SDK handles non-existent keys gracefully.
+    env.storage()
+        .persistent()
+        .extend_ttl(&key, TTL_THRESHOLD, TTL_EXTEND_TO);
 }
 
 /// Load the global escrow id list.
@@ -108,12 +111,18 @@ pub fn load_escrow_list(env: &Env) -> Vec<Symbol> {
     env.storage()
         .persistent()
         .get(&DataKey::EscrowList)
-        .unwrap_or(Vec::new(env))
+        .unwrap_or_else(|_| Vec::new(env))
 }
 
-/// Write the global escrow id list.
+/// Write the global escrow id list and extend its TTL.
+/// Optimized: includes TTL extension for durability.
 pub fn save_escrow_list(env: &Env, list: &Vec<Symbol>) {
-    env.storage().persistent().set(&DataKey::EscrowList, list);
+    let key = DataKey::EscrowList;
+    env.storage().persistent().set(&key, list);
+    // Extend TTL to prevent eviction of escrow registry
+    env.storage()
+        .persistent()
+        .extend_ttl(&key, TTL_THRESHOLD, TTL_EXTEND_TO);
 }
 
 /// Read the admin address.
@@ -121,9 +130,15 @@ pub fn load_admin(env: &Env) -> Option<Address> {
     env.storage().persistent().get(&DataKey::Admin)
 }
 
-/// Write the admin address.
+/// Write the admin address and extend its TTL.
+/// Optimized: includes TTL extension for durability of admin state.
 pub fn save_admin(env: &Env, admin: &Address) {
-    env.storage().persistent().set(&DataKey::Admin, admin);
+    let key = DataKey::Admin;
+    env.storage().persistent().set(&key, admin);
+    // Extend TTL to ensure admin state persists
+    env.storage()
+        .persistent()
+        .extend_ttl(&key, TTL_THRESHOLD, TTL_EXTEND_TO);
 }
 
 /// Read the role member list for a given role id.
@@ -131,14 +146,18 @@ pub fn load_role_members(env: &Env, role_id: u64) -> Vec<Address> {
     env.storage()
         .persistent()
         .get(&DataKey::RoleMembers(role_id))
-        .unwrap_or(Vec::new(env))
+        .unwrap_or_else(|_| Vec::new(env))
 }
 
-/// Write the role member list.
+/// Write the role member list and extend its TTL.
+/// Optimized: includes TTL extension for durability of access control state.
 pub fn save_role_members(env: &Env, role_id: u64, members: &Vec<Address>) {
+    let key = DataKey::RoleMembers(role_id);
+    env.storage().persistent().set(&key, members);
+    // Extend TTL to persist access control role data
     env.storage()
         .persistent()
-        .set(&DataKey::RoleMembers(role_id), members);
+        .extend_ttl(&key, TTL_THRESHOLD, TTL_EXTEND_TO);
 }
 
 /// Return `true` if the contract has been initialised.

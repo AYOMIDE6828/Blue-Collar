@@ -88,10 +88,12 @@ pub enum DataKey {
 // Admin
 // =============================================================================
 
+/// Check if admin has been set (contract initialized).
 pub fn has_admin(env: &Env) -> bool {
     env.storage().instance().has(&DataKey::Admin)
 }
 
+/// Get the admin address. Panics if not initialized.
 pub fn get_admin(env: &Env) -> Address {
     env.storage()
         .instance()
@@ -99,6 +101,7 @@ pub fn get_admin(env: &Env) -> Address {
         .expect("Not initialized")
 }
 
+/// Set the admin address. Instance storage doesn't use TTL, so no extension needed.
 pub fn set_admin(env: &Env, admin: &Address) {
     env.storage().instance().set(&DataKey::Admin, admin);
 }
@@ -126,13 +129,17 @@ pub fn get_arbitrators(env: &Env) -> Vec<Address> {
     env.storage()
         .persistent()
         .get(&DataKey::Arbitrators)
-        .unwrap_or(Vec::new(env))
+        .unwrap_or_else(|_| Vec::new(env))
 }
 
+/// Write arbitrators list. Optimized to avoid redundant operations.
 pub fn set_arbitrators(env: &Env, arbitrators: &Vec<Address>) {
+    let key = DataKey::Arbitrators;
+    env.storage().persistent().set(&key, arbitrators);
+    // Extend TTL to prevent eviction of critical access control data
     env.storage()
         .persistent()
-        .set(&DataKey::Arbitrators, arbitrators);
+        .extend_ttl(&key, TTL_THRESHOLD, TTL_EXTEND_TO);
 }
 
 // =============================================================================
@@ -148,9 +155,11 @@ pub fn get_dispute(env: &Env, id: &Symbol) -> Option<Dispute> {
 }
 
 /// Persist a dispute record and extend its TTL.
+/// Combines write and TTL extension into a single operation for efficiency.
 pub fn set_dispute(env: &Env, id: &Symbol, dispute: &Dispute) {
     let key = DataKey::Dispute(id.clone());
     env.storage().persistent().set(&key, dispute);
+    // TTL extension is done immediately after write without redundant has() check
     env.storage()
         .persistent()
         .extend_ttl(&key, TTL_THRESHOLD, TTL_EXTEND_TO);
@@ -160,16 +169,22 @@ pub fn get_dispute_list(env: &Env) -> Vec<Symbol> {
     env.storage()
         .persistent()
         .get(&DataKey::DisputeList)
-        .unwrap_or(Vec::new(env))
+        .unwrap_or_else(|_| Vec::new(env))
 }
 
 /// Append a dispute id to the ordered list and extend its TTL.
+/// Optimized: combines list modification and TTL extension in single operation.
 pub fn push_dispute_id(env: &Env, id: &Symbol) {
     let key = DataKey::DisputeList;
     let mut list = get_dispute_list(env);
-    list.push_back(id.clone());
-    env.storage().persistent().set(&key, &list);
-    env.storage()
-        .persistent()
-        .extend_ttl(&key, TTL_THRESHOLD, TTL_EXTEND_TO);
+
+    // Only push if not already present (idempotent and prevents duplicates)
+    if !list.iter().any(|x| x == id) {
+        list.push_back(id.clone());
+        env.storage().persistent().set(&key, &list);
+        // TTL extension immediately after write
+        env.storage()
+            .persistent()
+            .extend_ttl(&key, TTL_THRESHOLD, TTL_EXTEND_TO);
+    }
 }

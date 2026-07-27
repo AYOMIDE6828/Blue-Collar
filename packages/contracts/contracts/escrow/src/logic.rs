@@ -253,11 +253,13 @@ pub fn do_dispute(env: &Env, caller: &Address, id: Symbol) {
 /// otherwise funds are returned to the depositor.
 ///
 /// # Panics
+/// - `"Contract is paused"` if paused.
 /// - `"Escrow not found"` if id does not exist.
 /// - `"Missing role"` if caller does not hold `ROLE_ARBITRATOR`.
 /// - `"Escrow not disputed"` if state is not `Disputed`.
 pub fn do_resolve(env: &Env, caller: &Address, id: Symbol, release_to_beneficiary: bool) {
     // --- Checks ---
+    require_not_paused(env);
     require_role(env, &Symbol::new(env, ROLE_ARBITRATOR), caller);
 
     let mut record = load_escrow(env, &id).expect("Escrow not found");

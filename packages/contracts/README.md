@@ -66,6 +66,46 @@ The CI job uploads the generated coverage report as an artifact from `packages/c
 
 ---
 
+## Testing
+
+### Unit & Integration Tests
+
+Run the standard test suite:
+
+```bash
+cd packages/contracts
+cargo test --workspace
+```
+
+### Fuzz Testing
+
+The `fuzz` crate includes property-based tests using `proptest` that verify critical contract invariants
+with randomly generated inputs. These tests focus on amount validation, authorization edge cases,
+and state transitions for payment, escrow, and registry contracts.
+
+Run property-based fuzz tests:
+
+```bash
+cd packages/contracts/contracts/fuzz
+cargo test --test "*_fuzz" --features testutils
+```
+
+**Test coverage includes:**
+- `payment_fuzz.rs` — Lock/release/refund payments, fee deduction, amount safety
+- `escrow_fuzz.rs` — Create/release/cancel escrow, expiry handling, state transitions
+- `registry_fuzz.rs` — Worker registration, reputation updates, delegation
+- `market_fuzz.rs` — Tip transfers, escrow creation, fee calculations
+- `upgrade_fuzz.rs` — Contract upgrade mechanics
+
+**Key invariants tested:**
+- ✓ Amounts never overflow or underflow
+- ✓ Zero amounts are rejected
+- ✓ Fee calculations remain correct across all fee rates (0–500 bps)
+- ✓ Authorization checks prevent unauthorized actions
+- ✓ State transitions preserve invariants (e.g., locked payments cannot be double-released)
+
+---
+
 ## Deploy
 
 ### Testnet (quick start)

@@ -2,10 +2,11 @@ import pinoHttp from 'pino-http'
 import pino from 'pino'
 import fs from 'node:fs'
 import path from 'node:path'
-import type { IncomingMessage } from 'node:http'
+import crypto from 'node:crypto'
+import type { IncomingMessage, ServerResponse } from 'node:http'
 
 /** Request augmented with the authenticated user attached by auth middleware. */
-type LoggedRequest = IncomingMessage & { user?: { id?: string } }
+type LoggedRequest = IncomingMessage & { user?: { id?: string }; correlationId?: string }
 
 const LOG_DIR = process.env.LOG_DIR ?? 'storage/logs'
 fs.mkdirSync(path.resolve(LOG_DIR), { recursive: true })
@@ -17,6 +18,7 @@ const isDev = process.env.NODE_ENV !== 'production'
  * - method, url, status, response time
  * - user agent, IP address
  * - authenticated user id (if present)
+ * - correlation ID (from X-Correlation-Id header or auto-generated)
  *
  * In production, logs are written to a daily rotating file via pino/file.
  * In development, pretty-printed to stdout.
@@ -32,10 +34,28 @@ export const requestLogger = pinoHttp({
         }),
       ),
 
+  // Generate or propagate correlation ID
+  genReqId: (req: IncomingMessage): string => {
+    const existing = (req.headers as Record<string, string | string[] | undefined>)['x-correlation-id']
+    const id = (Array.isArray(existing) ? existing[0] : existing) ?? crypto.randomUUID()
+    ;(req as LoggedRequest).correlationId = id
+    return id
+  },
+
+  // Attach correlation ID to every response
+  customSuccessObject: (req: IncomingMessage, _res: ServerResponse, val: Record<string, unknown>) => {
+    return { ...val, correlationId: (req as LoggedRequest).correlationId }
+  },
+
+  customErrorObject: (req: IncomingMessage, _res: ServerResponse, _err: Error, val: Record<string, unknown>) => {
+    return { ...val, correlationId: (req as LoggedRequest).correlationId }
+  },
+
   // PII SAFETY: Only method, url, and statusCode are logged.
   // No headers, body, query params, or IP addresses are persisted.
   customProps: (req: IncomingMessage) => ({
     userId: (req as LoggedRequest).user?.id ?? null,
+    correlationId: (req as LoggedRequest).correlationId,
   }),
 
   customSuccessMessage: (req: IncomingMessage, res) => `${req.method} ${req.url} ${res.statusCode}`,

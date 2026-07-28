@@ -11,7 +11,7 @@ vi.mock('../../db.js', () => ({
   db: {
     worker: { findMany: vi.fn() },
     workerAnalytics: { findMany: vi.fn() },
-    review: { aggregate: vi.fn() },
+    review: { groupBy: vi.fn() },
   },
 }))
 
@@ -50,7 +50,9 @@ describe('exportWorkerAnalyticsCsv', () => {
   beforeEach(() => {
     vi.mocked(db.worker.findMany).mockResolvedValue(mockWorkers as any)
     vi.mocked(db.workerAnalytics.findMany).mockResolvedValue(mockAnalytics as any)
-    vi.mocked(db.review.aggregate).mockResolvedValue({ _avg: { rating: 4.5 }, _count: 12 } as any)
+    vi.mocked(db.review.groupBy).mockResolvedValue([
+      { workerId: 'w1', _avg: { rating: 4.5 }, _count: { rating: 12 } },
+    ] as any)
   })
 
   it('returns a string', async () => {

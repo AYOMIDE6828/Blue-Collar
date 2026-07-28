@@ -5,4 +5,5 @@ packages:
   - "packages/mobile"
   - "packages/monitoring"
   - "packages/sdk"
+  - "packages/test-utils"
   - "packages/types"

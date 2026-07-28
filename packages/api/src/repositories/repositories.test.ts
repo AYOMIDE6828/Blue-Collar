@@ -2,6 +2,8 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { UserRepository } from '../repositories/user.repository.js'
 import { WorkerRepository } from '../repositories/worker.repository.js'
 import { CategoryRepository } from '../repositories/category.repository.js'
+import { NotificationPreferencesRepository } from '../repositories/notificationPreferences.repository.js'
+import { JobRepository } from '../repositories/job.repository.js'
 
 // ── Mock Prisma ───────────────────────────────────────────────────────────────
 
@@ -32,6 +34,31 @@ vi.mock('../db.js', () => ({
       update: vi.fn(),
       delete: vi.fn(),
       count: vi.fn(),
+    },
+    notificationPreferences: {
+      findUnique: vi.fn(),
+      create: vi.fn(),
+      upsert: vi.fn(),
+    },
+    job: {
+      findUnique: vi.fn(),
+      findMany: vi.fn(),
+      create: vi.fn(),
+      update: vi.fn(),
+      updateMany: vi.fn(),
+      delete: vi.fn(),
+      count: vi.fn(),
+    },
+    jobApplication: {
+      findUnique: vi.fn(),
+      findFirst: vi.fn(),
+      findMany: vi.fn(),
+      create: vi.fn(),
+      update: vi.fn(),
+      count: vi.fn(),
+    },
+    review: {
+      groupBy: vi.fn(),
     },
   },
 }))
@@ -205,5 +232,135 @@ describe('CategoryRepository', () => {
     vi.mocked(db.category.count).mockResolvedValue(10)
     const n = await repo.count()
     expect(n).toBe(10)
+  })
+})
+
+// ── NotificationPreferencesRepository ────────────────────────────────────────
+
+describe('NotificationPreferencesRepository', () => {
+  let repo: NotificationPreferencesRepository
+
+  beforeEach(() => {
+    repo = new NotificationPreferencesRepository()
+    vi.clearAllMocks()
+  })
+
+  it('findByUserId calls db.notificationPreferences.findUnique', async () => {
+    vi.mocked(db.notificationPreferences.findUnique).mockResolvedValue(null)
+    await repo.findByUserId('u1')
+    expect(db.notificationPreferences.findUnique).toHaveBeenCalledWith({ where: { userId: 'u1' } })
+  })
+
+  it('findOrCreate returns existing prefs if found', async () => {
+    const existing = { id: 'p1', userId: 'u1' }
+    vi.mocked(db.notificationPreferences.findUnique).mockResolvedValue(existing as any)
+    const result = await repo.findOrCreate('u1')
+    expect(db.notificationPreferences.create).not.toHaveBeenCalled()
+    expect(result).toEqual(existing)
+  })
+
+  it('findOrCreate creates defaults when not found', async () => {
+    vi.mocked(db.notificationPreferences.findUnique).mockResolvedValue(null)
+    vi.mocked(db.notificationPreferences.create).mockResolvedValue({ id: 'p2', userId: 'u1' } as any)
+    await repo.findOrCreate('u1')
+    expect(db.notificationPreferences.create).toHaveBeenCalledWith(
+      expect.objectContaining({ data: expect.objectContaining({ userId: 'u1' }) }),
+    )
+  })
+
+  it('upsert calls db.notificationPreferences.upsert with userId and updates', async () => {
+    vi.mocked(db.notificationPreferences.upsert).mockResolvedValue({ id: 'p1', userId: 'u1' } as any)
+    await repo.upsert('u1', { announcements: false })
+    expect(db.notificationPreferences.upsert).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { userId: 'u1' },
+        update: { announcements: false },
+      }),
+    )
+  })
+
+  it('isEnabled returns true when prefs not found (opt-in by default)', async () => {
+    vi.mocked(db.notificationPreferences.findUnique).mockResolvedValue(null)
+    const result = await repo.isEnabled('u1', 'announcements')
+    expect(result).toBe(true)
+  })
+
+  it('isEnabled returns the stored boolean value when prefs exist', async () => {
+    vi.mocked(db.notificationPreferences.findUnique).mockResolvedValue({
+      id: 'p1', userId: 'u1', announcements: false,
+    } as any)
+    const result = await repo.isEnabled('u1', 'announcements')
+    expect(result).toBe(false)
+  })
+
+  it('seedDefaults calls db.notificationPreferences.upsert', async () => {
+    vi.mocked(db.notificationPreferences.upsert).mockResolvedValue({ id: 'p1' } as any)
+    await repo.seedDefaults('u1')
+    expect(db.notificationPreferences.upsert).toHaveBeenCalledWith(
+      expect.objectContaining({ where: { userId: 'u1' }, update: {} }),
+    )
+  })
+})
+
+// ── JobRepository ─────────────────────────────────────────────────────────────
+
+describe('JobRepository', () => {
+  let repo: JobRepository
+
+  beforeEach(() => {
+    repo = new JobRepository()
+    vi.clearAllMocks()
+  })
+
+  it('findById calls db.job.findUnique', async () => {
+    vi.mocked(db.job.findUnique).mockResolvedValue({ id: 'j1' } as any)
+    await repo.findById('j1')
+    expect(db.job.findUnique).toHaveBeenCalledWith(
+      expect.objectContaining({ where: { id: 'j1' } }),
+    )
+  })
+
+  it('list runs findMany + count in parallel and returns paginated result', async () => {
+    vi.mocked(db.job.findMany).mockResolvedValue([{ id: 'j1' }] as any)
+    vi.mocked(db.job.count).mockResolvedValue(1)
+    const result = await repo.list({ status: 'open' }, { skip: 0, take: 20 })
+    expect(db.job.findMany).toHaveBeenCalled()
+    expect(db.job.count).toHaveBeenCalled()
+    expect(result).toEqual({ data: [{ id: 'j1' }], total: 1 })
+  })
+
+  it('list uses eager-loading jobInclude (no N+1)', async () => {
+    vi.mocked(db.job.findMany).mockResolvedValue([] as any)
+    vi.mocked(db.job.count).mockResolvedValue(0)
+    await repo.list({}, { skip: 0, take: 20 })
+    const call = vi.mocked(db.job.findMany).mock.calls[0]?.[0] as any
+    // Assert relations are included eagerly
+    expect(call?.include).toBeDefined()
+    expect(call?.include?.category).toBe(true)
+    expect(call?.include?.location).toBe(true)
+    expect(call?.include?.postedBy).toBeDefined()
+    expect(call?.include?._count).toBeDefined()
+  })
+
+  it('findExpired queries only open jobs past expiresAt', async () => {
+    vi.mocked(db.job.findMany).mockResolvedValue([] as any)
+    await repo.findExpired()
+    const call = vi.mocked(db.job.findMany).mock.calls[0]?.[0] as any
+    expect(call?.where?.status).toBe('open')
+    expect(call?.where?.expiresAt?.lt).toBeDefined()
+  })
+
+  it('create calls db.job.create with include', async () => {
+    vi.mocked(db.job.create).mockResolvedValue({ id: 'j2' } as any)
+    await repo.create({ title: 'Plumber needed' } as any)
+    expect(db.job.create).toHaveBeenCalledWith(
+      expect.objectContaining({ include: expect.any(Object) }),
+    )
+  })
+
+  it('delete calls db.job.delete', async () => {
+    vi.mocked(db.job.delete).mockResolvedValue({ id: 'j1' } as any)
+    await repo.delete('j1')
+    expect(db.job.delete).toHaveBeenCalledWith({ where: { id: 'j1' } })
   })
 })

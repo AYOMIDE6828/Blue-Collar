@@ -5,6 +5,7 @@ import { redis, cacheMetrics } from './config/redis.js'
 import { db } from './db.js'
 import { disconnectDb } from './db.js'
 import { requestLogger } from './middleware/requestLogger.js'
+import { logger } from './config/logger.js'
 import { getErrorMessage } from './utils/getErrorMessage.js'
 import { registerEventHandlers } from './events/index.js'
 import { applySecurity, depthLimiter } from './middleware/security.js'
@@ -40,7 +41,7 @@ import walletRoutes from './routes/wallet.js'
 import workerEventsRoutes from './routes/workerEvents.js'
 import { auditMiddleware } from './middleware/audit.js'
 import { sanitize, sanitizeParams } from './middleware/sanitize.js'
-import { versionMiddleware, deprecationWarning, versionDeprecationMiddleware } from './middleware/version.js'
+import { versionMiddleware, deprecationWarning, versionDeprecationMiddleware, VERSION_CONFIG } from './middleware/version.js'
 import { responseSchemaVersioning } from './utils/schemaVersioning.js'
 import { errorHandler, notFoundHandler } from './middleware/errorHandler.js'
 import { metricsHandler as metricsEndpoint, metricsMiddleware } from './middleware/metrics.js'
@@ -96,7 +97,7 @@ app.use('/api/workers', insuranceRoutes)
 app.use('/api/referrals', referralRoutes)
 app.use('/api/analytics', analyticsRoutes)
 app.use('/api/payments', paymentRoutes)
-app.use('/api/bookings', bookingRoutes)
+app.use('/api/bookings', bookingsRoutes)
 app.use('/api/jobs', jobRoutes)
 app.use('/api/notifications', notificationRoutes)
 app.use('/api/reviews', helpfulRoutes)
@@ -106,7 +107,6 @@ app.use('/api', vitalsRoutes)
 app.use('/api/wallet', walletRoutes)
 app.use('/api/events', indexerRoutes)
 app.use('/api/escrow', escrowRoutes)
-app.use('/api/bookings', bookingsRoutes)
 app.use('/api/messages', messagesRoutes)
 app.use('/api/notifications/preferences', notificationPreferencesRoutes)
 app.use('/api/workers/:workerId/portfolio', portfolioRoutes)
@@ -127,7 +127,7 @@ app.use('/api/v1', responseTimeRoutes)
 app.use('/api/v1/workers', insuranceRoutes)
 app.use('/api/v1/referrals', referralRoutes)
 app.use('/api/v1/payments', paymentRoutes)
-app.use('/api/v1/bookings', bookingRoutes)
+app.use('/api/v1/bookings', bookingsRoutes)
 app.use('/api/v1/jobs', jobRoutes)
 app.use('/api/v1/notifications', notificationRoutes)
 app.use('/api/v1/reviews', helpfulRoutes)
@@ -301,12 +301,12 @@ app.use(errorHandler)
 // Drain in-flight requests and close both Prisma pool connections cleanly.
 // Kubernetes / PM2 send SIGTERM; Ctrl+C sends SIGINT.
 async function gracefulShutdown(signal: string): Promise<void> {
-  console.log(`[shutdown] ${signal} received — closing database connections…`)
+  logger.info({ signal }, '[shutdown] received — closing database connections…')
   try {
     await disconnectDb()
-    console.log('[shutdown] Database connections closed.')
+    logger.info('[shutdown] Database connections closed.')
   } catch (err) {
-    console.error('[shutdown] Error closing database connections:', err)
+    logger.error({ err }, '[shutdown] Error closing database connections')
   }
   process.exit(0)
 }

@@ -32,17 +32,13 @@ export async function exportWorkerAnalyticsCsv(curatorId: string): Promise<strin
   })
   const analyticsMap = new Map(analyticsRows.map((a) => [a.workerId, a]))
 
-  const reviewAggs = await Promise.all(
-    workerIds.map(async (id) => {
-      const agg = await db.review.aggregate({
-        where: { workerId: id, status: 'approved' },
-        _avg: { rating: true },
-        _count: true,
-      })
-      return { id, avg: agg._avg.rating ?? 0, count: agg._count }
-    }),
-  )
-  const reviewMap = new Map(reviewAggs.map((r) => [r.id, r]))
+  const reviewAggs = await db.review.groupBy({
+    by: ['workerId'],
+    where: { workerId: { in: workerIds }, status: 'approved' },
+    _avg: { rating: true },
+    _count: { rating: true },
+  })
+  const reviewMap = new Map(reviewAggs.map((r) => [r.workerId, { id: r.workerId, avg: r._avg.rating ?? 0, count: r._count.rating }]))
 
   const header =
     'Worker Name,Category,Total Views,Unique Views,Tips (XLM),Tip Count,Bookmarks,Contacts,Avg Rating,Reviews'

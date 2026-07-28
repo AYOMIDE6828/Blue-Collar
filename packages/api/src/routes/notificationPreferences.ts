@@ -1,82 +1,48 @@
-import { Router, Request, Response } from "express";
-import { PrismaClient } from "@prisma/client";
+import { Router } from 'express'
+import type { Request, Response } from 'express'
+import { notificationPreferencesRepository, ALLOWED_PREF_FIELDS } from '../repositories/notificationPreferences.repository.js'
+import { createServiceLogger } from '../utils/logger.js'
 
-const router = Router();
-const prisma = new PrismaClient();
+const router = Router()
+const logger = createServiceLogger('NotificationPreferences')
 
-const ALLOWED_FIELDS = [
-  "newWorkerNearby",
-  "statusChange",
-  "reviewReply",
-  "announcements",
-] as const;
-
-type AllowedField = (typeof ALLOWED_FIELDS)[number];
-
-// GET /api/users/me/notifications
-router.get("/", async (req: Request, res: Response) => {
+// GET /api/notifications/preferences
+router.get('/', async (req: Request, res: Response) => {
   try {
-    const userId = (req as any).user.id;
-    let prefs = await prisma.notificationPreferences.findUnique({
-      where: { userId },
-    });
-    if (!prefs) {
-      prefs = await prisma.notificationPreferences.create({
-        data: {
-          userId,
-          newWorkerNearby: true,
-          statusChange: true,
-          reviewReply: true,
-          announcements: true,
-        },
-      });
-    }
-    res.json(prefs);
+    const userId = (req as any).user.id
+    const prefs = await notificationPreferencesRepository.findOrCreate(userId)
+    res.json(prefs)
   } catch (err) {
-    console.error("GET notification prefs error:", err);
-    res.status(500).json({ error: "Internal server error." });
+    logger.error('GET notification prefs error', err)
+    res.status(500).json({ error: 'Internal server error.' })
   }
-});
+})
 
-// PUT /api/users/me/notifications
-router.put("/", async (req: Request, res: Response) => {
+// PUT /api/notifications/preferences
+router.put('/', async (req: Request, res: Response) => {
   try {
-    const userId = (req as any).user.id;
-    const updates: Partial<Record<AllowedField, boolean>> = {};
+    const userId = (req as any).user.id
+    const updates: Partial<Record<(typeof ALLOWED_PREF_FIELDS)[number], boolean>> = {}
 
-    for (const field of ALLOWED_FIELDS) {
+    for (const field of ALLOWED_PREF_FIELDS) {
       if (field in req.body) {
-        if (typeof req.body[field] !== "boolean") {
-          return res
-            .status(400)
-            .json({ error: `Field '${field}' must be a boolean.` });
+        if (typeof req.body[field] !== 'boolean') {
+          return res.status(400).json({ error: `Field '${field}' must be a boolean.` })
         }
-        updates[field] = req.body[field];
+        updates[field] = req.body[field]
       }
     }
 
     if (Object.keys(updates).length === 0) {
-      return res.status(400).json({ error: "No valid fields provided." });
+      return res.status(400).json({ error: 'No valid fields provided.' })
     }
 
-    const prefs = await prisma.notificationPreferences.upsert({
-      where: { userId },
-      update: updates,
-      create: {
-        userId,
-        newWorkerNearby: true,
-        statusChange: true,
-        reviewReply: true,
-        announcements: true,
-        ...updates,
-      },
-    });
-
-    res.json(prefs);
+    const prefs = await notificationPreferencesRepository.upsert(userId, updates)
+    res.json(prefs)
   } catch (err) {
-    console.error("PUT notification prefs error:", err);
-    res.status(500).json({ error: "Internal server error." });
+    logger.error('PUT notification prefs error', err)
+    res.status(500).json({ error: 'Internal server error.' })
   }
-});
+})
 
-export default router;
+export default router

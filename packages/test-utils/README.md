@@ -1,14 +1,20 @@
 # @bluecollar/test-utils
 
-Shared test utilities for the BlueCollar monorepo.
+Shared test utilities for all BlueCollar packages. Replaces duplicated helper
+functions that previously lived independently in every test file.
 
-Resolves issues **#1054** (shared Stellar SDK mock layer) and **#1056** (shared contract test fixtures).
+## What's inside
 
----
+| Export path | Contents |
+|---|---|
+| `@bluecollar/test-utils` (root) | Everything below, re-exported |
+| `@bluecollar/test-utils/factories` | Data factories (`userFactory`, `workerFactory`, `categoryFactory`, `reviewFactory`, `authUserFactory`, `stellarAddressFactory`) |
+| `@bluecollar/test-utils/react` | `renderWithProviders` — wraps RTL `render` with `AuthContext` pre-wired |
 
 ## Installation
 
-This package is a workspace dependency. Add it to any package's `devDependencies`:
+The package is a private workspace member. Add it as a `devDependency` in
+whichever package needs it:
 
 ```json
 {
@@ -18,155 +24,117 @@ This package is a workspace dependency. Add it to any package's `devDependencies
 }
 ```
 
----
+Then run `pnpm install` from the repo root.
 
-## Stellar SDK Mocks (`#1054`)
+## Usage
 
-Replaces hand-rolled Horizon/Freighter/Soroban RPC mocks across `packages/api`, `packages/app`, and `packages/sdk`.
-
-### `makeMockHorizonFetch(options?)`
-
-Returns a `vi.fn()` that intercepts `fetch` calls to Horizon endpoints:
+### Data factories
 
 ```ts
-import { makeMockHorizonFetch, MOCK_STELLAR_ADDRESS } from '@bluecollar/test-utils'
+import { userFactory, workerFactory, authUserFactory } from '@bluecollar/test-utils'
 
-// Basic — 100 XLM balance, sequence 1234567
-vi.stubGlobal('fetch', makeMockHorizonFetch())
-
-// Custom balance
-vi.stubGlobal('fetch', makeMockHorizonFetch({ balance: '250.0000000' }))
-
-// Simulate account not found
-vi.stubGlobal('fetch', makeMockHorizonFetch({ accountNotFound: true }))
-
-// Simulate broadcast failure
-vi.stubGlobal('fetch', makeMockHorizonFetch({ broadcastFails: true }))
-
-// Pending transaction (404)
-vi.stubGlobal('fetch', makeMockHorizonFetch({ txPending: true }))
+const curator = userFactory({ role: 'curator', verified: true })
+const worker  = workerFactory({ isActive: false })
+const auth    = authUserFactory({ role: 'admin' })
 ```
 
-### `makeFreighterMock(options?)`
+All factories accept `Partial<T>` overrides so you only specify what differs
+from the sensible defaults.
 
-Returns a mock of the `@stellar/freighter-api` module:
+### Express mock helpers (API unit tests)
 
 ```ts
-import { makeFreighterMock } from '@bluecollar/test-utils'
+import { makeRequest, makeResponse, makeNext, makeJwt } from '@bluecollar/test-utils'
 
-vi.mock('@stellar/freighter-api', () => makeFreighterMock({
-  isConnected: true,
-  address: 'GDQP2KPQGKIHYJGXNUIYOMHARUARCA7DJT5FO2FFOOKY3B2WSQHG4W37',
-  network: 'TESTNET',
-}))
+it('returns 200 on success', async () => {
+  const req  = makeRequest({ body: { email: 'a@b.com' }, user: { id: 'u-1', role: 'user' } })
+  const res  = makeResponse()
+  const next = makeNext()
+
+  await myController(req as any, res as any, next as any)
+
+  expect(res.status).toHaveBeenCalledWith(200)
+  expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ status: 'success' }))
+})
 ```
 
-### `makeSorobanRpcMock(options?)`
+### React render helper (app unit tests)
 
-Returns a mock of the Soroban SDK `SorobanRpc.Server` and related classes:
+```tsx
+import { renderWithProviders } from '@bluecollar/test-utils/react'
+import { authUserFactory } from '@bluecollar/test-utils/factories'
 
-```ts
-import { makeSorobanRpcMock } from '@bluecollar/test-utils'
-
-vi.mock('@stellar/stellar-sdk', () => ({
-  ...makeSorobanRpcMock({ simulateResult: { success: true } }),
-}))
+it('shows curator-only edit button', () => {
+  renderWithProviders(<WorkerCard worker={worker} />, {
+    authUser: authUserFactory({ role: 'curator' }),
+  })
+  expect(screen.getByRole('button', { name: /edit/i })).toBeInTheDocument()
+})
 ```
 
-### Well-known test addresses
+Available options for `renderWithProviders`:
 
-```ts
-import { MOCK_STELLAR_ADDRESS, MOCK_WORKER_ADDRESS, MOCK_FEE_RECIPIENT_ADDRESS } from '@bluecollar/test-utils'
-```
-
----
-
-## Contract Test Fixtures (`#1056`)
-
-Replaces duplicated account setup and funding helpers in `packages/sdk` and `packages/contracts` tests.
-
-### `makeTestAccountSet()`
-
-Creates the standard set of test accounts (admin, curator, worker, payer, feeRecipient):
-
-```ts
-import { makeTestAccountSet, resetAllCounters } from '@bluecollar/test-utils'
-
-beforeEach(() => resetAllCounters())
-
-const { admin, curator, worker, payer, feeRecipient } = makeTestAccountSet()
-// Each has .publicKey, .secretKey, .label, .balance
-```
-
-### `makeTestAccount(options?)`
-
-Create a single account:
-
-```ts
-const myAccount = makeTestAccount({ label: 'escrow-arbiter', balance: '500.0000000' })
-```
-
-### Funding helpers
-
-```ts
-import { buildMockFundedResponse, buildMockAccountResponse, mockFundTestnetAccount } from '@bluecollar/test-utils'
-
-// Mock a successful friendbot call
-vi.stubGlobal('fetch', vi.fn().mockResolvedValueOnce(buildMockFundedResponse()))
-
-// Mock the account info response for a funded account
-vi.stubGlobal('fetch', vi.fn().mockResolvedValueOnce(buildMockAccountResponse(myAccount)))
-
-// Spy on HorizonClient.fundTestnetAccount
-vi.spyOn(client, 'fundTestnetAccount').mockImplementation(mockFundTestnetAccount())
-```
-
-### Escrow helpers
-
-```ts
-import { makeEscrowId, futureExpiry, resetEscrowCounter } from '@bluecollar/test-utils'
-
-const escrowId = makeEscrowId()         // 'esc_000'
-const expiry   = futureExpiry()         // now + 86400 seconds
-const expiry2  = futureExpiry(3600)     // now + 1 hour
-```
-
-### Worker fixture factory
-
-```ts
-import { makeTestWorkerFixture } from '@bluecollar/test-utils'
-
-const worker = makeTestWorkerFixture({ ownerAddress: accounts.worker.publicKey })
-// worker.id, worker.name, worker.category, worker.wasmHash
-```
-
-### Resetting counters
-
-All counters are reset in bulk with `resetAllCounters()`:
-
-```ts
-beforeEach(() => resetAllCounters())
-```
-
----
+| Option | Type | Default | Description |
+|---|---|---|---|
+| `authUser` | `FakeAuthUser \| null` | `null` | The authenticated user |
+| `token` | `string \| null` | `'test-jwt'` if authUser set, else `null` | JWT token |
+| `authLoading` | `boolean` | `false` | Whether auth is still loading |
+| `extraWrappers` | `ComponentType[]` | `[]` | Extra providers to wrap around the component |
 
 ## Migration guide
 
-### Before (hand-rolled in each test file):
+### Before (#1058): per-file helpers
 
 ```ts
-// In packages/sdk/src/__tests__/sdk.test.ts
-vi.spyOn(global, 'fetch').mockResolvedValueOnce(
-  new Response(JSON.stringify({
-    balances: [{ balance: '100.0000000', asset_type: 'native' }],
-    sequence: '1234567',
-  }), { status: 200 })
-)
+// Scattered across dozens of test files in packages/api and packages/app
+function makeRes() {
+  const res: any = {}
+  res.status = vi.fn().mockReturnValue(res)
+  res.json = vi.fn().mockReturnValue(res)
+  return res
+}
+
+function createTestUser(overrides = {}) {
+  return { id: faker.string.uuid(), email: faker.internet.email(), ... }
+}
 ```
 
-### After:
+### After (#1058): shared imports
 
 ```ts
-import { makeMockHorizonFetch } from '@bluecollar/test-utils'
-vi.stubGlobal('fetch', makeMockHorizonFetch())
+import { makeRequest, makeResponse, makeNext, userFactory } from '@bluecollar/test-utils'
 ```
+
+Differences to keep in mind when migrating:
+
+- `makeResponse()` already sets up `status.mockReturnValue(res)` — you don't
+  need to do it yourself.
+- `userFactory()` returns a full DB-shape user; `authUserFactory()` returns
+  only the fields present in JWT / AuthContext.
+- `makeJwt()` signs with `process.env.JWT_SECRET ?? 'test-secret'`, which
+  matches the `JWT_SECRET` set in `src/__tests__/setup.ts`.
+
+## Adding new helpers
+
+Add to the appropriate file:
+
+- **Domain data** (new model factories): `src/factories/index.ts`
+- **Express mocks**: `src/express/index.ts`
+- **React/Next helpers**: `src/react/index.ts`
+
+Export from `src/index.ts` if the helper belongs at the root entry point.
+
+Then re-run `pnpm install` and import from the consuming package.
+
+## Audit results (#1058)
+
+The following helpers were identified as duplicates before consolidation:
+
+| Helper | Appeared in |
+|---|---|
+| `makeReq` / `makeRequest` / `createMockRequest` | `auth.test.ts`, `workers.test.ts`, `helpers/factories.ts`, `security/regression.test.ts`, +12 more |
+| `makeRes` / `makeResponse` / `createMockResponse` | Same files as above |
+| `makeNext` / `createMockNext` | Same files |
+| `createTestUser` / `userFactory` | `helpers/factories.ts`, `factories/user.factory.ts`, app `Dashboard.test.tsx` |
+| `createTestWorkerData` / `workerFactory` | `helpers/factories.ts`, `factories/worker.factory.ts` |
+| `generateTestToken` / `makeJwt` | `helpers/factories.ts`, `auth.test.ts`, `workers.test.ts`, +8 more |

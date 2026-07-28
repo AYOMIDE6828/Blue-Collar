@@ -1,86 +1,17 @@
 /**
  * @bluecollar/test-utils
  *
- * Single entry-point for all shared test utilities.
+ * Shared test utilities across all BlueCollar packages.
  *
- * Issues resolved:
- *   - #1054: Shared mock service layer for Stellar SDK calls
- *   - #1056: Shared contract test fixtures across sdk and contracts tests
+ * Sub-path exports:
+ *   '@bluecollar/test-utils/factories' — Data factories (userFactory, workerFactory, …)
+ *   '@bluecollar/test-utils/react'     — renderWithProviders for React/Next.js tests
  *
- * ─── Quick start ──────────────────────────────────────────────────────────────
+ * Root export (this file) re-exports everything so you can import from the
+ * package root when you need multiple things:
  *
- *   // Stellar SDK mocks (Horizon + Freighter + Soroban RPC)
- *   import {
- *     makeMockHorizonFetch,
- *     makeFreighterMock,
- *     makeSorobanRpcMock,
- *     MOCK_STELLAR_ADDRESS,
- *   } from '@bluecollar/test-utils'
- *
- *   // Contract test fixtures (accounts, workers, escrow helpers)
- *   import {
- *     makeTestAccountSet,
- *     makeTestWorkerFixture,
- *     makeEscrowId,
- *     futureExpiry,
- *     resetAllCounters,
- *   } from '@bluecollar/test-utils'
+ *   import { userFactory, makeRequest, makeResponse } from '@bluecollar/test-utils'
  */
 
-// ── Stellar SDK mocks ─────────────────────────────────────────────────────────
-export {
-  // Constants
-  MOCK_STELLAR_ADDRESS,
-  MOCK_WORKER_ADDRESS,
-  MOCK_FEE_RECIPIENT_ADDRESS,
-
-  // Mock factories
-  makeMockHorizonFetch,
-  makeFreighterMock,
-  makeSorobanRpcMock,
-} from './stellar-mocks.js'
-
-export type {
-  MockHorizonOptions,
-  MockFreighterOptions,
-  MockSorobanRpcOptions,
-} from './stellar-mocks.js'
-
-// ── Contract test fixtures ────────────────────────────────────────────────────
-export {
-  // Constants
-  TESTNET_FRIENDBOT_URL,
-  TESTNET_HORIZON_URL,
-  MAINNET_HORIZON_URL,
-  DEFAULT_TEST_BALANCE,
-  ONE_DAY_LEDGERS,
-
-  // Account factories
-  makeTestAccount,
-  makeTestAccountSet,
-  resetTestKeyCounter,
-
-  // Funding helpers
-  buildMockFundedResponse,
-  buildMockAccountResponse,
-  mockFundTestnetAccount,
-
-  // Escrow helpers
-  makeEscrowId,
-  resetEscrowCounter,
-  futureExpiry,
-
-  // Worker fixture factory
-  makeTestWorkerFixture,
-  resetWorkerCounter,
-
-  // Bulk reset
-  resetAllCounters,
-} from './contract-fixtures.js'
-
-export type {
-  TestAccount,
-  TestAccountSet,
-  MakeTestAccountOptions,
-  TestWorkerFixture,
-} from './contract-fixtures.js'
+export * from './factories/index.js'
+export * from './express/index.js'

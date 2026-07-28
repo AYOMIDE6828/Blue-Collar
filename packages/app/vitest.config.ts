@@ -1,3 +1,15 @@
+/**
+ * vitest.config.ts — packages/app
+ *
+ * Coverage thresholds enforced at 85 %+ (issue #1055).
+ *
+ * Exceptions:
+ *  - branches: 80 % — many conditional branches in React components are
+ *    loading/error/empty states that are tested indirectly through component
+ *    integration but not as isolated unit-test branches.
+ *  - src/app/** excluded — Next.js App Router pages/layouts; these are
+ *    covered by Playwright e2e tests, not Vitest unit tests.
+ */
 import { defineConfig } from 'vitest/config'
 import react from '@vitejs/plugin-react'
 import path from 'path'
@@ -18,8 +30,21 @@ export default defineConfig({
     coverage: {
       provider: 'v8',
       reporter: ['text', 'html'],
-      include: ['src/components/**', 'src/hooks/**', 'src/lib/**'],
-      exclude: ['**/*.stories.tsx'],
+      include: ['src/components/**', 'src/hooks/**', 'src/lib/**', 'src/utils/**', 'src/context/**'],
+      exclude: [
+        'src/app/**',
+        '**/*.stories.tsx',
+        '**/*.d.ts',
+        'src/**/*.test.{ts,tsx}',
+        'src/**/__tests__/**',
+      ],
+      // ── Thresholds (issue #1055) ──────────────────────────────────────────
+      thresholds: {
+        lines: 85,
+        functions: 85,
+        branches: 80,
+        statements: 85,
+      },
     },
   },
   resolve: {

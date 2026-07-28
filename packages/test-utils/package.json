@@ -1,0 +1,22 @@
+{
+  "name": "@bluecollar/test-utils",
+  "version": "0.1.0",
+  "description": "Shared test utilities: Stellar SDK mocks and contract test fixtures",
+  "type": "module",
+  "main": "./src/index.ts",
+  "exports": {
+    ".": "./src/index.ts",
+    "./stellar-mocks": "./src/stellar-mocks.ts",
+    "./contract-fixtures": "./src/contract-fixtures.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "typescript": "^5.4.0",
+    "vitest": "^1.4.0"
+  },
+  "peerDependencies": {
+    "vitest": ">=1.0.0"
+  }
+}

@@ -78,6 +78,7 @@
     "zod": "^3.23.0"
   },
   "devDependencies": {
+    "@bluecollar/test-utils": "workspace:*",
     "@bluecollar/types": "workspace:*",
     "@faker-js/faker": "^10.2.0",
     "@stryker-mutator/core": "^8.2.6",

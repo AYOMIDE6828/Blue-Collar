@@ -50,6 +50,7 @@ import { getRolloutStatusEndpoint, updateRolloutEndpoint } from './utils/version
 import { readFileSync } from 'node:fs'
 import { join, dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { logger } from './config/logger.js'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 const { version: API_VERSION } = JSON.parse(
@@ -96,7 +97,7 @@ app.use('/api/workers', insuranceRoutes)
 app.use('/api/referrals', referralRoutes)
 app.use('/api/analytics', analyticsRoutes)
 app.use('/api/payments', paymentRoutes)
-app.use('/api/bookings', bookingRoutes)
+app.use('/api/bookings', bookingsRoutes)
 app.use('/api/jobs', jobRoutes)
 app.use('/api/notifications', notificationRoutes)
 app.use('/api/reviews', helpfulRoutes)
@@ -127,7 +128,7 @@ app.use('/api/v1', responseTimeRoutes)
 app.use('/api/v1/workers', insuranceRoutes)
 app.use('/api/v1/referrals', referralRoutes)
 app.use('/api/v1/payments', paymentRoutes)
-app.use('/api/v1/bookings', bookingRoutes)
+app.use('/api/v1/bookings', bookingsRoutes)
 app.use('/api/v1/jobs', jobRoutes)
 app.use('/api/v1/notifications', notificationRoutes)
 app.use('/api/v1/reviews', helpfulRoutes)
@@ -301,12 +302,12 @@ app.use(errorHandler)
 // Drain in-flight requests and close both Prisma pool connections cleanly.
 // Kubernetes / PM2 send SIGTERM; Ctrl+C sends SIGINT.
 async function gracefulShutdown(signal: string): Promise<void> {
-  console.log(`[shutdown] ${signal} received — closing database connections…`)
+  logger.info({ signal }, `[shutdown] ${signal} received — closing database connections…`)
   try {
     await disconnectDb()
-    console.log('[shutdown] Database connections closed.')
+    logger.info('[shutdown] Database connections closed.')
   } catch (err) {
-    console.error('[shutdown] Error closing database connections:', err)
+    logger.error({ err }, '[shutdown] Error closing database connections')
   }
   process.exit(0)
 }

@@ -1,5 +1,6 @@
 import type { Request, Response } from 'express'
 import { handleError } from '../utils/handleError.js'
+import { logger } from '../config/logger.js'
 
 interface AnalyticsEvent {
   event: string
@@ -21,10 +22,8 @@ export async function recordEvents(req: Request, res: Response) {
     }
 
     // TODO: Send to analytics backend (e.g., ClickHouse, Mixpanel, Amplitude)
-    // For now, just log to console in dev
-    if (process.env.NODE_ENV === 'development') {
-      console.log('[Analytics Events]', JSON.stringify(events, null, 2))
-    }
+    // Log events at debug level — visible in development, suppressed in production
+    logger.debug({ events }, '[Analytics Events] received client events')
 
     return res.json({ status: 'success', code: 200 })
   } catch (err) {

@@ -481,7 +481,7 @@ impl MarketContract {
         if fee > 0 {
             client.transfer(&from, &config.fee_recipient, &fee);
             env.events()
-                .publish((symbol_short!("FeeTaken"),), (fee, config.fee_recipient));
+                .publish((symbol_short!("FeeTaken"), config.fee_recipient), fee);
         }
 
         env.events()
@@ -569,8 +569,8 @@ impl MarketContract {
         if fee > 0 {
             client.transfer(&contract_addr, &config.fee_recipient, &fee);
             env.events().publish(
-                (symbol_short!("FeeTaken"),),
-                (fee, config.fee_recipient.clone()),
+                (symbol_short!("FeeTaken"), config.fee_recipient.clone()),
+                fee,
             );
         }
 

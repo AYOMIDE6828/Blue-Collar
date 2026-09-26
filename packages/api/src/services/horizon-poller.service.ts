@@ -17,13 +17,19 @@ const POLL_INTERVAL_MS = 30_000
 let pollTimer: ReturnType<typeof setTimeout> | null = null
 
 /** Map Horizon contract event topics to internal event names */
-function resolveEventName(contractId: string, topic: string): string | null {
+function resolveEventName(contractId: string, topic: string | string[]): string | null {
+  const topicStr = Array.isArray(topic) ? topic[0] : topic
   if (contractId === REGISTRY_CONTRACT_ID) {
-    if (topic === 'register') return 'worker.registered'
-    if (topic === 'toggle') return 'worker.toggled'
+    if (topicStr === 'register') return 'worker.registered'
+    if (topicStr === 'toggle') return 'worker.toggled'
   }
   if (contractId === MARKET_CONTRACT_ID) {
-    if (topic === 'tip') return 'tip.sent'
+    if (topicStr === 'tip') return 'tip.sent'
+    if (topicStr === 'feetaken') return 'fee.taken'
+  }
+  if (contractId === REGISTRY_CONTRACT_ID || contractId === MARKET_CONTRACT_ID) {
+    // Handle payment events with expanded topics
+    if (topicStr === 'pay') return 'payment.completed'
   }
   return null
 }
